@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RehabPath — AI Prosthetic Rehabilitation Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+
+<style>
+/* ═══════════════════════════════════════════════
+   ROOT & REVEAL OVERRIDES
+═══════════════════════════════════════════════ */
+:root {
+  --bg:      #050914;
+  --s1:      #0a1020;
+  --s2:      #0f1a30;
+  --border:  #1a2840;
+  --blue:    #3b82f6;
+  --cyan:    #06b6d4;
+  --purple:  #8b5cf6;
+  --green:   #10b981;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+  --text:    #e2e8f0;
+  --muted:   #64748b;
+  --mono:    'JetBrains Mono', monospace;
+}
+.reveal { font-family: 'Inter', sans-serif; }
+.reveal .slides { text-align: left; }
+.reveal .slides section {
+  height: 100%;
+  padding: 0;
+  top: 0 !important;
+}
+
+/* Background for all slides */
+.reveal .slide-background { background: var(--bg); }
+
+/* ═══════════════════════════════════════════════
+   ANIMATED GRID BACKGROUND
+═══════════════════════════════════════════════ */
+.grid-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: gridmove 20s linear infinite;
+}
+@keyframes gridmove {
+  0%   { background-position: 0 0; }
+  100% { background-position: 60px 60px; }
+}
+
+/* ═══════════════════════════════════════════════
+   SLIDE CONTENT WRAPPER
+═══════════════════════════════════════════════ */
+.slide-content {
+  position: relative; z-index: 1;
+  height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 3rem 5rem;
+  overflow: hidden;
+}
+.slide-content.top { justify-content: flex-start; padding-top: 2.5rem; }
+
+/* ═══════════════════════════════════════════════
+   GLOW ORBS
+═══════════════════════════════════════════════ */
+.orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px); opacity: 0.15; z-index: 0;
+  animation: orb-float 8s ease-in-out infinite;
+}
+@keyframes orb-float {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%      { transform: translate(20px,-20px) scale(1.05); }
+}
+.orb-blue   { background: radial-gradient(circle, #3b82f6, transparent); }
+.orb-purple { background: radial-gradient(circle, #8b5cf6, transparent); }
+.orb-cyan   { background: radial-gradient(circle, #06b6d4, transparent); }
+.orb-green  { background: radial-gradient(circle, #10b981, transparent); }
+
+/* ═══════════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════════ */
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4 { text-transform: none; letter-spacing: -0.03em; margin: 0; }
+
+.title-main {
+  font-size: 4.5rem; font-weight: 900; line-height: 1.05;
+  background: linear-gradient(135deg, #fff 20%, #93c5fd 60%, #c4b5fd);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+.title-sub {
+  font-size: 1.4rem; color: #64748b; font-weight: 400; margin-bottom: 2rem;
+}
+.slide-label {
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--blue);
+  margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.slide-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(59,130,246,0.4), transparent);
+}
+.slide-title {
+  font-size: 2.4rem; font-weight: 800; color: #f1f5f9;
+  line-height: 1.15; margin-bottom: 1.2rem;
+}
+.slide-title span { color: var(--blue); }
+.reveal p { color: #94a3b8; font-size: 0.9rem; line-height: 1.7; margin: 0 0 0.8rem; }
+strong { color: #e2e8f0 !important; }
+
+/* ═══════════════════════════════════════════════
+   BADGE / TAG
+═══════════════════════════════════════════════ */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3);
+  color: var(--blue); border-radius: 20px;
+  padding: 0.3rem 0.9rem; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 1rem;
+}
+.tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+.tag {
+  padding: 0.25rem 0.7rem; border-radius: 5px;
+  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.4px;
+}
+.tb { background: rgba(59,130,246,0.15);  color:#60a5fa; border:1px solid rgba(59,130,246,0.25); }
+.tp { background: rgba(139,92,246,0.15);  color:#a78bfa; border:1px solid rgba(139,92,246,0.25); }
+.tg { background: rgba(16,185,129,0.15);  color:#34d399; border:1px solid rgba(16,185,129,0.25); }
+.ta { background: rgba(245,158,11,0.15);  color:#fbbf24; border:1px solid rgba(245,158,11,0.25); }
+.tc { background: rgba(6,182,212,0.15);   color:#22d3ee; border:1px solid rgba(6,182,212,0.25); }
+.tr { background: rgba(239,68,68,0.15);   color:#f87171; border:1px solid rgba(239,68,68,0.25); }
+
+/* ═══════════════════════════════════════════════
+   STAT CARDS
+═══════════════════════════════════════════════ */
+.stats-row {
+  display: grid; grid-template-columns: repeat(5,1fr); gap: 0.8rem; margin-top: 1.5rem;
+}
+.stat-card {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1rem; text-align: center;
+  transition: border-color 0.3s;
+}
+.stat-card:hover { border-color: rgba(59,130,246,0.4); }
+.stat-num { font-size: 1.6rem; font-weight: 800; color: var(--blue); }
+.stat-lbl { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.2rem; }
+
+/* ═══════════════════════════════════════════════
+   LAYER CARD
+═══════════════════════════════════════════════ */
+.layer-card {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; margin-bottom: 0.8rem;
+}
+.layer-head {
+  display: flex; align-items: center; gap: 0.9rem;
+  padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border);
+}
+.lnum {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.85rem; flex-shrink: 0;
+}
+.lb { background:rgba(59,130,246,0.2); color:#60a5fa; }
+.lp { background:rgba(139,92,246,0.2); color:#a78bfa; }
+.lc { background:rgba(6,182,212,0.2);  color:#22d3ee; }
+.lg { background:rgba(16,185,129,0.2); color:#34d399; }
+.la { background:rgba(245,158,11,0.2); color:#fbbf24; }
+.lr { background:rgba(239,68,68,0.2);  color:#f87171; }
+.layer-title { font-size: 0.95rem; font-weight: 700; color: #f1f5f9; }
+.layer-sub   { font-size: 0.7rem; color: var(--muted); }
+.layer-body  { padding: 1rem 1.2rem; }
+
+/* ═══════════════════════════════════════════════
+   CODE / MONO
+═══════════════════════════════════════════════ */
+pre {
+  background: #0d1117; border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.9rem 1.1rem;
+  font-family: var(--mono); font-size: 0.65rem; line-height: 1.7;
+  overflow-x: auto; margin: 0.7rem 0;
+}
+.kw  { color:#ff7b72; }
+.fn  { color:#79c0ff; }
+.str { color:#a5d6ff; }
+.cm  { color:#8b949e; font-style:italic; }
+.num { color:#f2cc60; }
+.cls { color:#ffa657; }
+
+/* ═══════════════════════════════════════════════
+   EQUATION BLOCK
+═══════════════════════════════════════════════ */
+.eq {
+  background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2);
+  border-radius: 10px; padding: 0.8rem 1rem; margin: 0.7rem 0; overflow-x: auto;
+}
+.eq-lbl {
+  font-size: 0.6rem; color: var(--blue); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem;
+}
+
+/* ═══════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════ */
+.t-wrap { border-radius: 10px; border: 1px solid var(--border); overflow: hidden; margin: 0.8rem 0; }
+table { width:100%; border-collapse: collapse; font-size: 0.72rem; }
+thead tr { background: rgba(255,255,255,0.04); }
+th {
+  padding: 0.55rem 0.8rem; text-align: left;
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 0.5rem 0.8rem; color: #94a3b8;
+  border-bottom: 1px solid rgba(31,45,69,0.4); vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+/* ═══════════════════════════════════════════════
+   FLOW DIAGRAM
+═══════════════════════════════════════════════ */
+.flow {
+  background: #0d1117; border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem 1.2rem;
+  font-family: var(--mono); font-size: 0.65rem; line-height: 2.2;
+}
+.flow-box {
+  display: inline-block; background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border); border-radius: 5px;
+  padding: 0.1rem 0.5rem; color: #e2e8f0;
+}
+.arr { color: var(--blue); font-weight: bold; margin: 0 0.3rem; }
+.flow-note { color: var(--muted); font-size: 0.58rem; padding-left: 1.5rem; }
+.flow-sep { color: #1a2840; margin: 0.3rem 0; }
+
+/* ═══════════════════════════════════════════════
+   GRID OF INFOCARDS
+═══════════════════════════════════════════════ */
+.card-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.7rem; }
+.card-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.7rem; }
+.icard {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: 10px; padding: 0.9rem;
+}
+.icard-title { font-size: 0.8rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.3rem; }
+.icard p { font-size: 0.72rem; margin: 0; }
+
+/* ═══════════════════════════════════════════════
+   KPI CARDS
+═══════════════════════════════════════════════ */
+.kpi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.8rem; }
+.kpi-card {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem; position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+}
+.kv-b::before { background: var(--blue); }
+.kv-p::before { background: var(--purple); }
+.kv-g::before { background: var(--green); }
+.kv-a::before { background: var(--amber); }
+.kv-c::before { background: var(--cyan); }
+.kv-r::before { background: var(--red); }
+.kpi-val  { font-size: 1.6rem; font-weight: 800; color: #f1f5f9; }
+.kpi-name { font-size: 0.68rem; color: var(--muted); margin-top: 0.1rem; }
+.kpi-desc { font-size: 0.62rem; color: #475569; margin-top: 0.3rem; }
+
+/* ═══════════════════════════════════════════════
+   ALERT / INFO BOX
+═══════════════════════════════════════════════ */
+.alert {
+  border-radius: 8px; padding: 0.75rem 1rem;
+  margin: 0.7rem 0; font-size: 0.75rem;
+  display: flex; gap: 0.7rem; align-items: flex-start;
+}
+.al-b { background:rgba(59,130,246,0.1);  border:1px solid rgba(59,130,246,0.25);  color:#93c5fd; }
+.al-g { background:rgba(16,185,129,0.1);  border:1px solid rgba(16,185,129,0.25);  color:#6ee7b7; }
+.al-a { background:rgba(245,158,11,0.1);  border:1px solid rgba(245,158,11,0.25);  color:#fcd34d; }
+.al-p { background:rgba(139,92,246,0.1);  border:1px solid rgba(139,92,246,0.25);  color:#c4b5fd; }
+
+/* ═══════════════════════════════════════════════
+   TIMELINE (compact)
+═══════════════════════════════════════════════ */
+.tl { display: flex; flex-direction: column; gap: 0.8rem; }
+.tl-item { display: flex; gap: 1rem; align-items: flex-start; }
+.tl-dot-col { display:flex; flex-direction:column; align-items:center; gap:0; }
+.tl-dot { width:12px; height:12px; border-radius:50%; border:2px solid var(--blue); background:var(--bg); flex-shrink:0; margin-top:0.2rem; }
+.tl-line { width:2px; flex:1; background:var(--border); margin-top: 0.2rem; }
+.tl-body .tl-ttl { font-size:0.8rem; font-weight:700; color:#f1f5f9; }
+.tl-body .tl-desc { font-size:0.68rem; color:#94a3b8; }
+
+/* ═══════════════════════════════════════════════
+   PROGRESS LINE (slide number)
+═══════════════════════════════════════════════ */
+.reveal .progress { background: rgba(59,130,246,0.15); }
+.reveal .progress span { background: var(--blue); }
+
+/* ═══════════════════════════════════════════════
+   SLIDE TRANSITIONS & ANIMATIONS
+═══════════════════════════════════════════════ */
+.reveal .slides section.present .animate-up {
+  animation: anim-up 0.6s cubic-bezier(.16,1,.3,1) both;
+}
+.reveal .slides section.present .animate-up-d1 { animation-delay: 0.1s; }
+.reveal .slides section.present .animate-up-d2 { animation-delay: 0.2s; }
+.reveal .slides section.present .animate-up-d3 { animation-delay: 0.3s; }
+.reveal .slides section.present .animate-up-d4 { animation-delay: 0.4s; }
+.reveal .slides section.present .animate-up-d5 { animation-delay: 0.5s; }
+.reveal .slides section.present .animate-up-d6 { animation-delay: 0.6s; }
+
+@keyframes anim-up {
+  from { opacity:0; transform: translateY(30px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.reveal .slides section.present .animate-fade {
+  animation: anim-fade 0.5s ease both;
+}
+@keyframes anim-fade {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+
+/* Glowing number for title */
+.glow-num {
+  font-size: 10rem; font-weight: 900; line-height: 1;
+  color: rgba(59,130,246,0.06);
+  position: absolute; right: 4rem; top: 50%; transform: translateY(-50%);
+  font-family: 'Inter', sans-serif; user-select: none; z-index: 0;
+}
+
+/* Two-column layout */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+.two-col-6040 { display: grid; grid-template-columns: 3fr 2fr; gap: 1.5rem; align-items: start; }
+
+/* Slide counter top-right */
+.slide-num {
+  position: absolute; top: 1.5rem; right: 2rem;
+  font-size: 0.7rem; color: var(--muted); font-family: var(--mono);
+  font-weight: 500;
+}
+
+/* Accent line under title */
+.accent-line {
+  width: 48px; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  margin-bottom: 1rem;
+}
+
+/* Connection arrows between layer cards */
+.chain-arrow {
+  text-align: center; color: var(--blue); font-size: 1rem;
+  margin: -0.3rem 0; line-height: 1; opacity: 0.6;
+}
+
+/* Highlight text */
+.hl-b { color: #60a5fa; font-weight: 600; }
+.hl-g { color: #34d399; font-weight: 600; }
+.hl-p { color: #a78bfa; font-weight: 600; }
+.hl-a { color: #fbbf24; font-weight: 600; }
+.hl-c { color: #22d3ee; font-weight: 600; }
+.hl-r { color: #f87171; font-weight: 600; }
+</style>
+</head>
+
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ════════════════════════════════════════════
+     SLIDE 1 — TITLE
+════════════════════════════════════════════ -->
+<section data-transition="zoom" data-transition-speed="slow">
+  <div class="grid-bg"></div>
+  <div class="orb orb-blue"    style="width:500px;height:500px;top:-100px;right:-100px;animation-delay:0s"></div>
+  <div class="orb orb-purple"  style="width:400px;height:400px;bottom:-100px;left:-50px;animation-delay:3s"></div>
+  <div class="slide-content" style="justify-content:center;align-items:flex-start">
+    <div class="badge animate-up">SBME 4th Year · Rehabilitation Engineering · 2026</div>
+    <div class="title-main animate-up animate-up-d1">RehabPath</div>
+    <div class="title-main animate-up animate-up-d2" style="font-size:2.5rem;margin-bottom:1rem">
+      AI-Powered Prosthetic<br/>Rehabilitation Platform
+    </div>
+    <div class="title-sub animate-up animate-up-d3">
+      Digital Twins · Foundation World Models · Reinforcement Learning
+    </div>
+    <div class="tags animate-up animate-up-d4">
+      <span class="tag tb">Digital Twin</span>
+      <span class="tag tp">Reinforcement Learning</span>
+      <span class="tag tg">Foundation World Model</span>
+      <span class="tag ta">MuJoCo Physics</span>
+      <span class="tag tc">Ninapro Database</span>
+      <span class="tag tr">sEMG Decoding</span>
+      <span class="tag tb">Multi-Agent Systems</span>
+      <span class="tag tp">Photogrammetry</span>
+      <span class="tag tg">PPO · CNN · LSTM</span>
+    </div>
+    <div class="stats-row animate-up animate-up-d5">
+      <div class="stat-card">
+        <div class="stat-num">30–50%</div>
+        <div class="stat-lbl">Device abandonment</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">$60K</div>
+        <div class="stat-lbl">Avg device cost</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">180+</div>
+        <div class="stat-lbl">Ninapro acquisitions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">0</div>
+        <div class="stat-lbl">New data needed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">&lt;100ms</div>
+        <div class="stat-lbl">Target latency</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 2 — THE PROBLEM
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-red" style="width:400px;height:400px;top:-80px;right:-80px;animation-delay:1s;opacity:0.1"></div>
+  <div class="glow-num">01</div>
+  <div class="slide-content top">
+    <div class="slide-num">01 / 13</div>
+    <div class="slide-label animate-up">The Problem</div>
+    <div class="slide-title animate-up animate-up-d1">Three Walls Every<br/>Amputee Hits</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="t-wrap animate-up animate-up-d2">
+      <table>
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Today's Reality</th>
+            <th>The Failure</th>
+            <th>RehabPath Solution</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="fragment">
+            <td><strong>Measurement</strong></td>
+            <td>Plaster casting or $10K 3D scanner</td>
+            <td>Clinics skip it — socket fit is imprecise</td>
+            <td><span class="hl-g">Smartphone video + AI photogrammetry → sub-2mm mesh</span></td>
+          </tr>
+          <tr class="fragment">
+            <td><strong>Socket Fitting</strong></td>
+            <td>3–5 physical "test socket" visits</td>
+            <td>Hotspots found only after fabrication</td>
+            <td><span class="hl-b">MuJoCo physics predicts pressure before manufacturing</span></td>
+          </tr>
+          <tr class="fragment">
+            <td><strong>Motor Relearning</strong></td>
+            <td>Weeks of in-clinic OT, no feedback</td>
+            <td>30–50% give up; pathways degrade waiting</td>
+            <td><span class="hl-p">RL Therapist + Digital Twin on screen; contralateral mirroring</span></td>
+          </tr>
+          <tr class="fragment">
+            <td><strong>Controller Calibration</strong></td>
+            <td>Static factory controller, never learns</td>
+            <td>Patient must adapt to machine forever</td>
+            <td><span class="hl-a">Overnight co-adaptation loop: machine adapts to patient nightly</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert al-b fragment animate-up">
+      <span>💡</span>
+      <span><strong>Root cause:</strong> No software layer accumulates knowledge about a specific patient over time. RehabPath is that layer — from surgery to post-fitting mastery, entirely in software, zero hardware purchase required.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 3 — ARCHITECTURE OVERVIEW
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-blue" style="width:500px;height:500px;bottom:-100px;right:-100px;animation-delay:2s"></div>
+  <div class="glow-num">02</div>
+  <div class="slide-content top">
+    <div class="slide-num">02 / 13</div>
+    <div class="slide-label animate-up">System Architecture</div>
+    <div class="slide-title animate-up animate-up-d1">Five Layers, One Pipeline</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="flow animate-up animate-up-d2" style="font-size:0.62rem">
+      <div style="color:#8b949e;font-size:0.58rem;margin-bottom:0.3rem">── WEEK 1 — CLINIC VISIT (30 min) ─────────────────────────────────────────────────────</div>
+      <div><span style="color:#60a5fa;font-weight:700">L0</span> <span class="arr">▶</span> <span class="flow-box" style="border-color:rgba(59,130,246,0.4);color:#60a5fa">Smartphone Video</span> <span class="arr">→</span> <span class="flow-box">COLMAP + Open3D</span> <span class="arr">→</span> <span class="flow-box" style="border-color:rgba(59,130,246,0.4);color:#60a5fa">Residual Limb 3D Mesh</span></div>
+      <div class="flow-note">Structure-from-Motion · ArUco scale reference · sub-2mm accuracy</div>
+      <div><span style="color:#a78bfa;font-weight:700">L1</span> <span class="arr">▶</span> <span class="flow-box" style="border-color:rgba(139,92,246,0.4);color:#a78bfa">3D Mesh + Socket CAD</span> <span class="arr">→</span> <span class="flow-box">MuJoCo Soft-Body Sim</span> <span class="arr">→</span> <span class="flow-box" style="border-color:rgba(139,92,246,0.4);color:#a78bfa">Pressure Map + Hotspot Report</span></div>
+      <div class="flow-note">Contact mechanics · tissue compliance · daily volume change prediction</div>
+      <div><span style="color:#22d3ee;font-weight:700">L2</span> <span class="arr">▶</span> <span class="flow-box" style="border-color:rgba(6,182,212,0.4);color:#22d3ee">Webcam + Intact Hand</span> <span class="arr">→</span> <span class="flow-box">MediaPipe Hands</span> <span class="arr">→</span> <span class="flow-box" style="border-color:rgba(6,182,212,0.4);color:#22d3ee">Auto-Labelled EMG Dataset</span></div>
+      <div class="flow-note">Contralateral mirroring · zero explicit training · drives digital twin on screen</div>
+      <div style="color:#8b949e;font-size:0.58rem;margin-top:0.4rem;margin-bottom:0.3rem">── WEEKS 2–12 — HOME REHABILITATION ──────────────────────────────────────────────────</div>
+      <div><span style="color:#34d399;font-weight:700">L3</span> <span class="arr">▶</span> <span class="flow-box" style="border-color:rgba(16,185,129,0.4);color:#34d399">Residual Limb sEMG</span> <span class="arr">→</span> <span class="flow-box">Biological Twin CNN</span> <span class="arr">→</span> <span class="flow-box" style="border-color:rgba(16,185,129,0.4);color:#34d399">21-DOF Intended Pose</span></div>
+      <div class="flow-note">Foundation Model (Ninapro) · few-shot fine-tune · EWC continual learning</div>
+      <div><span style="color:#fbbf24;font-weight:700">L4</span> <span class="arr">▶</span> <span class="flow-box" style="border-color:rgba(245,158,11,0.4);color:#fbbf24">21-DOF Pose</span> <span class="arr">→</span> <span class="flow-box">MuJoCo Hand Physics</span> <span class="arr">→</span> <span class="flow-box" style="border-color:rgba(245,158,11,0.4);color:#fbbf24">Physics Outcome + Screen Render</span></div>
+      <div class="flow-note">Contact detection · grasp stability · object manipulation · mirror therapy</div>
+      <div><span style="color:#f87171;font-weight:700">L5</span> <span class="arr">▶</span> <span class="flow-box" style="border-color:rgba(239,68,68,0.4);color:#f87171">Session Outcome</span> <span class="arr">→</span> <span class="flow-box">RL Therapist (PPO)</span> <span class="arr">→</span> <span class="flow-box" style="border-color:rgba(239,68,68,0.4);color:#f87171">Next Session Plan + Overnight Update</span></div>
+      <div class="flow-note">Curriculum RL · frustration/boredom detection · overnight co-adaptation</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 4 — LAYER 0: PHOTOGRAMMETRY
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-blue" style="width:400px;height:400px;top:-60px;right:-60px;animation-delay:0s"></div>
+  <div class="glow-num">03</div>
+  <div class="slide-content top">
+    <div class="slide-num">03 / 13</div>
+    <div class="slide-label animate-up">Layer 0</div>
+    <div class="slide-title animate-up animate-up-d1"><span style="color:#60a5fa">Smartphone Photogrammetry</span><br/>Replacing the $10,000 Scanner</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <div class="layer-card">
+          <div class="layer-head">
+            <div class="lnum lb">L0</div>
+            <div>
+              <div class="layer-title">Structure-from-Motion (SfM)</div>
+              <div class="layer-sub">COLMAP · Open3D · ArUco markers · 30-sec video</div>
+            </div>
+          </div>
+          <div class="layer-body">
+            <p>Patient records 30-sec video of residual limb. Printed ArUco markers provide absolute scale. COLMAP reconstructs sub-2mm accurate 3D mesh.</p>
+            <div class="eq">
+              <div class="eq-lbl">Projection Model</div>
+              $\mathbf{x}_i = \mathbf{K}[\mathbf{R}_i \mid \mathbf{t}_i]\,\mathbf{X}$
+            </div>
+            <div class="eq">
+              <div class="eq-lbl">Bundle Adjustment</div>
+              $\min \displaystyle\sum_{i,j} \left\|\mathbf{x}_{ij} - \pi(\mathbf{R}_i,\mathbf{t}_i,\mathbf{X}_j)\right\|^2$
+            </div>
+            <div class="eq">
+              <div class="eq-lbl">ArUco Scale Recovery</div>
+              $s = L_\text{phys} / L_\text{SfM} \quad \Rightarrow \quad \mathbf{X}_\text{cal} = s\cdot\mathbf{X}_\text{SfM}$
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.75rem;font-weight:600;color:#94a3b8;margin-bottom:0.5rem">Outputs Extracted From Mesh</p>
+        <div class="t-wrap">
+          <table>
+            <thead><tr><th>Measurement</th><th>Method</th><th>Used By</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Proximal circumference</strong></td><td>Cross-section at 80%</td><td>Socket design</td></tr>
+              <tr><td><strong>Distal circumference</strong></td><td>Cross-section at 20%</td><td>Socket design</td></tr>
+              <tr><td><strong>Limb volume (ml)</strong></td><td>Signed tetrahedra</td><td>Volume model</td></tr>
+              <tr><td><strong>Surface curvature</strong></td><td>Principal curvatures</td><td>Hotspot prediction</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alert al-g" style="margin-top:0.7rem">
+          <span>✓</span>
+          <span><strong>Accuracy:</strong> ArUco markers on printed paper achieve sub-2mm error — sufficient for ±3mm socket tolerance. No specialised hardware required.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 5 — LAYER 1: SOCKET SIMULATION
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-purple" style="width:450px;height:450px;bottom:-80px;left:-80px;animation-delay:2s"></div>
+  <div class="glow-num">04</div>
+  <div class="slide-content top">
+    <div class="slide-num">04 / 13</div>
+    <div class="slide-label animate-up">Layer 1</div>
+    <div class="slide-title animate-up animate-up-d1"><span style="color:#a78bfa">Socket Pressure Simulation</span><br/>Replacing Physical Test Sockets</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <div class="layer-card">
+          <div class="layer-head">
+            <div class="lnum lp">L1</div>
+            <div>
+              <div class="layer-title">MuJoCo Soft-Body Contact Mechanics</div>
+              <div class="layer-sub">Rigid socket · compliant tissue · daily volume fluctuation</div>
+            </div>
+          </div>
+          <div class="layer-body">
+            <div class="eq">
+              <div class="eq-lbl">Contact Compliance (MuJoCo solref/solimp)</div>
+              $f_n = f\!\left(d_t, d_r, d_1, d_2\right)$ — skin: $d_t{=}0.02$, socket: $d_t{=}0.001$
+            </div>
+            <div class="eq">
+              <div class="eq-lbl">Pressure at Contact Point k</div>
+              $P_k = F_{n,k} / A_k \quad [\text{kPa}] \quad$ threshold: $P_k > 40\,\text{kPa}$ → ulcer risk
+            </div>
+            <div class="eq">
+              <div class="eq-lbl">Daily Volume Decay (Lilja &amp; Öberg 1997)</div>
+              $V(t) = V_0 \!\cdot\!\left(1 - \alpha\ln\!\left(1+\tfrac{t}{T_{1/2}}\right)\right), \quad \alpha{\approx}0.05$
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:0.6rem">The simulator evaluates fit at three time points — morning, midday, evening — to predict how the socket degrades throughout the day as the limb loses volume.</p>
+        <div class="card-grid">
+          <div class="icard">
+            <div class="icard-title">🦴 Rigid Body</div>
+            <p>Socket mesh: near-rigid. $d_t{=}0.001$, instant response.</p>
+          </div>
+          <div class="icard">
+            <div class="icard-title">🫀 Soft Body</div>
+            <p>Limb mesh: skin compliance. $d_t{=}0.02$, $d_r{=}1.0$.</p>
+          </div>
+          <div class="icard">
+            <div class="icard-title">📊 Output</div>
+            <p>2D pressure heatmap per activity (rest, walk, lift 1kg, 5kg).</p>
+          </div>
+          <div class="icard">
+            <div class="icard-title">🔄 Volume</div>
+            <p>Simulate 3 time points — detect poor evening fit before fabrication.</p>
+          </div>
+        </div>
+        <div class="alert al-a" style="margin-top:0.7rem;font-size:0.7rem">
+          <span>⚠️</span>
+          <span>If fit drops below threshold at any time point, design is flagged for a liner recommendation before any physical socket is manufactured.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 6 — LAYER 2: ZERO-TRAINING BOOTSTRAP
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-cyan" style="width:400px;height:400px;top:-60px;right:-60px;animation-delay:1s"></div>
+  <div class="glow-num">05</div>
+  <div class="slide-content top">
+    <div class="slide-num">05 / 13</div>
+    <div class="slide-label animate-up">Layer 2</div>
+    <div class="slide-title animate-up animate-up-d1"><span style="color:#22d3ee">Contralateral Mirror Bootstrap</span><br/>Zero-Training EMG Calibration</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <div class="layer-card">
+          <div class="layer-head">
+            <div class="lnum lc">L2</div>
+            <div>
+              <div class="layer-title">MediaPipe Hands → Auto-Label sEMG</div>
+              <div class="layer-sub">10-min calibration reduced to 3 min · no conscious effort</div>
+            </div>
+          </div>
+          <div class="layer-body">
+            <p>Patient moves intact hand in front of webcam. Webcam labels residual limb sEMG automatically — no instructions, no explicit firing exercises.</p>
+            <div class="eq">
+              <div class="eq-lbl">Joint Angle from MediaPipe Landmarks</div>
+              $\theta_{ij} = \arccos\!\left(\dfrac{\mathbf{v}_i \cdot \mathbf{v}_j}{\|\mathbf{v}_i\|\|\mathbf{v}_j\|}\right) \;\Rightarrow\; \hat{\mathbf{q}} \in \mathbb{R}^{21}$
+            </div>
+            <div class="eq">
+              <div class="eq-lbl">Automatic EMG Label Assignment</div>
+              $y_t = \displaystyle\arg\max_{c\in\mathcal{C}} \cos\text{-sim}\!\left(\hat{\mathbf{q}}_t,\,\mathbf{q}^*_c\right)$
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="flow" style="margin-bottom:0.8rem">
+          <div style="color:#8b949e;font-size:0.58rem;margin-bottom:0.3rem">── BOOTSTRAP LOOP ──────────────────────</div>
+          <div><span class="flow-box" style="color:#22d3ee;border-color:rgba(6,182,212,0.3)">Intact hand moves</span></div>
+          <div class="flow-note">↓ MediaPipe extracts 21 landmarks</div>
+          <div><span class="flow-box">21-DOF pose $\hat{\mathbf{q}}_t$</span></div>
+          <div class="flow-note">↓ mirrored to digital twin on screen</div>
+          <div><span class="flow-box" style="color:#34d399;border-color:rgba(16,185,129,0.3)">Patient sees digital hand mirror them</span></div>
+          <div class="flow-note">↓ concurrent residual limb sEMG auto-labelled</div>
+          <div><span class="flow-box" style="color:#fbbf24;border-color:rgba(245,158,11,0.3)">Labelled dataset → fine-tune CNN</span></div>
+        </div>
+        <div class="alert al-g">
+          <span>✓</span>
+          <span><strong>Ninapro connection:</strong> Canonical poses $\mathbf{q}^*_c$ computed from DB8 and DB9 kinematic recordings — average joint configuration per movement class across all intact subjects.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 7 — LAYER 3: BIOLOGICAL TWIN
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-green" style="width:450px;height:450px;bottom:-80px;right:-80px;animation-delay:1.5s"></div>
+  <div class="glow-num">06</div>
+  <div class="slide-content top">
+    <div class="slide-num">06 / 13</div>
+    <div class="slide-label animate-up">Layer 3</div>
+    <div class="slide-title animate-up animate-up-d1"><span style="color:#34d399">The Biological Twin</span><br/>Foundation World Model for sEMG</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <pre><span class="kw">class</span> <span class="cls">BiologicalTwin</span>(nn.Module):
+  <span class="kw">def</span> <span class="fn">__init__</span>(self):
+    <span class="cm"># Temporal CNN — local activation patterns</span>
+    self.cnn = nn.Sequential(
+      nn.<span class="cls">Conv1d</span>(<span class="num">12</span>, <span class="num">64</span>,  kernel_size=<span class="num">5</span>),
+      nn.<span class="cls">BatchNorm1d</span>(<span class="num">64</span>),  nn.<span class="cls">ReLU</span>(),
+      nn.<span class="cls">Conv1d</span>(<span class="num">64</span>, <span class="num">128</span>, kernel_size=<span class="num">3</span>),
+      nn.<span class="cls">Conv1d</span>(<span class="num">128</span>,<span class="num">256</span>, kernel_size=<span class="num">3</span>),
+      nn.<span class="cls">AdaptiveAvgPool1d</span>(<span class="num">32</span>)
+    )
+    <span class="cm"># LSTM — sequential movement context</span>
+    self.lstm = nn.<span class="cls">LSTM</span>(<span class="num">256</span>, <span class="num">256</span>,
+                  num_layers=<span class="num">2</span>, dropout=<span class="num">0.3</span>)
+    <span class="cm"># Kinematic decoder → 21 joint angles (°)</span>
+    self.decoder = nn.Sequential(
+      nn.<span class="cls">Linear</span>(<span class="num">256</span>, <span class="num">128</span>), nn.<span class="cls">ReLU</span>(),
+      nn.<span class="cls">Linear</span>(<span class="num">128</span>, <span class="num">21</span>)
+    )</pre>
+        <div class="eq" style="margin-top:0.5rem">
+          <div class="eq-lbl">EWC Loss — Prevents Forgetting</div>
+          $\mathcal{L}_\text{EWC} = \mathcal{L}_\text{task} + \dfrac{\lambda}{2}\displaystyle\sum_i F_i(\theta_i - \theta^*_i)^2$
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.5rem">Training strategy — four phases, each using a different Ninapro subset:</p>
+        <div class="t-wrap">
+          <table>
+            <thead><tr><th>Phase</th><th>Data</th><th>What Updates</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Pre-train</strong></td><td>DB1+DB2 (67 intact)</td><td>All layers</td></tr>
+              <tr><td><strong>Amputee FT</strong></td><td>DB3+DB10 amputees</td><td>All, low LR</td></tr>
+              <tr><td><strong>Bootstrap</strong></td><td>L2 session (10 min)</td><td>LSTM + decoder</td></tr>
+              <tr><td><strong>Session update</strong></td><td>Per-session clean wins</td><td>LSTM + EWC</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="eq" style="margin-top:0.7rem">
+          <div class="eq-lbl">Fisher Information (EWC weight)</div>
+          $F_i = \mathbb{E}\!\left[\!\left(\!\dfrac{\partial \log p(y|\mathbf{x};\theta)}{\partial\theta_i}\!\right)^{\!2}\right]$
+        </div>
+        <div class="alert al-b" style="margin-top:0.5rem;font-size:0.68rem">
+          <span>ℹ️</span>
+          <span>Output is continuous 21-DOF kinematics — not 49 discrete classes. Hand moves fluidly, not by snapping between positions.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 8 — LAYER 4: DIGITAL TWIN HAND
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-blue" style="width:400px;height:400px;top:-60px;left:-60px;animation-delay:0.5s;opacity:0.12"></div>
+  <div class="glow-num">07</div>
+  <div class="slide-content top">
+    <div class="slide-num">07 / 13</div>
+    <div class="slide-label animate-up">Layer 4</div>
+    <div class="slide-title animate-up animate-up-d1"><span style="color:#fbbf24">The Digital Twin Hand</span><br/>Physics-Based Motor Feedback</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <div class="card-grid">
+          <div class="icard">
+            <div class="icard-title">🦴 Joint Kinematics</div>
+            <p>5 fingers × 3 hinge joints = 15 DOF. Anatomically correct ROM, damping, stiffness, coupled tendons.</p>
+          </div>
+          <div class="icard">
+            <div class="icard-title">🤝 Grasp Stability</div>
+            <p>Contact solver: normal forces + friction cone at all contact points. Grasp stable ↔ friction cone satisfied.</p>
+          </div>
+          <div class="icard">
+            <div class="icard-title">📦 Task Objects</div>
+            <p>Foam ball (50g), cup (200g), coin (5g), key, elastic band — each stresses a different control aspect.</p>
+          </div>
+          <div class="icard">
+            <div class="icard-title">💪 Fatigue Model</div>
+            <p>Hold duration limit estimated from session history and updated per session.</p>
+          </div>
+        </div>
+        <div class="eq" style="margin-top:0.7rem">
+          <div class="eq-lbl">Friction Cone — Grasp Success Condition</div>
+          $\sqrt{f_t^2 + f_b^2} \;\leq\; \mu \cdot f_n \quad$ at all contact points
+        </div>
+        <div class="eq">
+          <div class="eq-lbl">Reward (extends existing env.py)</div>
+          $r = 2.0(-d) + 1.2(-\|\Delta a\|^2) + 0.01(-\|a\|^2) + 3.0\cdot\mathbf{1}[\text{stable}]$
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.5rem;font-weight:600">Six uses beyond overnight training:</p>
+        <div class="t-wrap">
+          <table>
+            <thead><tr><th>Use</th><th>When</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Mirror therapy</strong></td><td>Continuously, live</td></tr>
+              <tr><td><strong>Pre-session audit</strong></td><td>90 sec before session</td></tr>
+              <tr><td><strong>Task judge</strong></td><td>After every attempt</td></tr>
+              <tr><td><strong>Counterfactual replay</strong></td><td>Post-session review</td></tr>
+              <tr><td><strong>Electrode optimiser</strong></td><td>Clinic visit</td></tr>
+              <tr><td><strong>Fatigue pacing</strong></td><td>Continuously, live</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alert al-a" style="margin-top:0.7rem;font-size:0.68rem">
+          <span>⚠️</span>
+          <span>Fatigue vs. electrode failure look identical in raw EMG. The digital twin disambiguates: correct response but slow = fatigue. No response + confidence crash = electrode issue.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 9 — LAYER 5: RL THERAPIST
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-red" style="width:450px;height:450px;bottom:-80px;right:-80px;animation-delay:2s;opacity:0.1"></div>
+  <div class="glow-num">08</div>
+  <div class="slide-content top">
+    <div class="slide-num">08 / 13</div>
+    <div class="slide-label animate-up">Layer 5</div>
+    <div class="slide-title animate-up animate-up-d1"><span style="color:#f87171">RL Therapist</span> + <span style="color:#a78bfa">Co-Adaptation Loop</span></div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <p style="font-size:0.75rem;font-weight:700;color:#e2e8f0;margin-bottom:0.4rem">A — Curriculum Policy (RL Therapist)</p>
+        <div class="eq">
+          <div class="eq-lbl">MDP — State / Action / Reward</div>
+          $\mathcal{S} = [\bar{a}_{1:K}, s_n, f_t, \Delta t_\text{surg}]$<br/>
+          $\mathcal{A} = [\text{task, difficulty, duration}]$<br/>
+          $r = \dot{\bar{a}}_k - \beta_1\mathbf{1}[\bar{a}_k{<}0.4] - \beta_2\mathbf{1}[\bar{a}_k{>}0.95]$
+        </div>
+        <p style="font-size:0.72rem;color:#64748b">$\dot{\bar{a}}_k$: accuracy slope (learning signal). $\beta_1$: frustration penalty. $\beta_2$: boredom penalty.</p>
+        <p style="font-size:0.75rem;font-weight:700;color:#e2e8f0;margin:0.8rem 0 0.4rem">B — Overnight Co-Adaptation</p>
+        <div class="eq">
+          <div class="eq-lbl">Virtual Patient Generator</div>
+          $\tilde{\mathbf{x}} \sim \mathcal{N}(\boldsymbol{\mu}_c, \boldsymbol{\Sigma}_c) \cdot (1 - \alpha_f f_t)$
+        </div>
+        <div class="eq">
+          <div class="eq-lbl">PPO Surrogate Objective</div>
+          $\mathcal{L}^\text{PPO} = \hat{\mathbb{E}}\!\left[\min\!\left(r_t\hat{A}_t,\;\text{clip}(r_t,1{\pm}\varepsilon)\hat{A}_t\right)\right]$
+        </div>
+      </div>
+      <div>
+        <div class="flow">
+          <div style="color:#8b949e;font-size:0.58rem;margin-bottom:0.3rem">── OVERNIGHT CLOUD LOOP (4h · 100K episodes) ────</div>
+          <div><span class="flow-box" style="color:#a78bfa;border-color:rgba(139,92,246,0.3)">Agent 1: Virtual Patient</span></div>
+          <div class="flow-note">↓ generates synthetic sEMG(intent, fatigue)</div>
+          <div><span class="flow-box" style="color:#60a5fa;border-color:rgba(59,130,246,0.3)">Agent 2: PPO Controller</span></div>
+          <div class="flow-note">↓ decodes → commands digital twin → attempts task</div>
+          <div><span class="flow-box" style="color:#34d399;border-color:rgba(16,185,129,0.3)">MuJoCo physics judges: stable grasp?</span></div>
+          <div class="flow-note">↓ PPO updates on reward signal</div>
+          <div><span class="flow-box" style="color:#a78bfa;border-color:rgba(139,92,246,0.3)">Agent 1 drifts distribution (next-day drift)</span></div>
+          <div class="flow-note">↓ repeat until budget exhausted</div>
+          <div><span class="flow-box" style="color:#fbbf24;border-color:rgba(245,158,11,0.3)">Improved weights → patient app before morning</span></div>
+        </div>
+        <div class="alert al-p" style="margin-top:0.7rem;font-size:0.68rem">
+          <span>💡</span>
+          <span>The machine adapts to the patient. The patient wakes up with a better controller — without doing anything.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 10 — TASK EVALUATION
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-cyan" style="width:400px;height:400px;top:-80px;left:-80px;animation-delay:1s"></div>
+  <div class="glow-num">09</div>
+  <div class="slide-content top">
+    <div class="slide-num">09 / 13</div>
+    <div class="slide-label animate-up">Task Evaluation</div>
+    <div class="slide-title animate-up animate-up-d1">Three-Layer<br/>Attempt Scoring</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <div class="eq">
+          <div class="eq-lbl">Composite Score</div>
+          $S = 0.25\,S_\text{signal} + 0.35\,S_\text{kinematic} + 0.40\,S_\text{physics}$
+        </div>
+        <div class="eq">
+          <div class="eq-lbl">Layer 1 — Signal Decoding</div>
+          $S_\text{signal} = p_\text{max} \cdot \mathbf{1}[\hat{c} = c^*]$
+        </div>
+        <div class="eq">
+          <div class="eq-lbl">Layer 2 — Kinematic Accuracy</div>
+          $S_\text{kin} = \max\!\!\left(0,1{-}\tfrac{\bar\delta_\theta}{45°}\right) \cdot\min\!\!\left(\tfrac{T_\text{hold}}{2s},1\right)$
+        </div>
+        <div class="eq">
+          <div class="eq-lbl">Layer 3 — Physics Task</div>
+          $S_\text{phys} = 0.3\,\mathbf{1}[\text{contact}]+0.3\,\mathbf{1}[\text{stable}]+0.4\,\mathbf{1}[\text{complete}]$
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.75rem;font-weight:700;color:#e2e8f0;margin-bottom:0.5rem">Failure Diagnosis → RL Therapist Response</p>
+        <div class="t-wrap">
+          <table>
+            <thead><tr><th>Failure Pattern</th><th>Layer Caught By</th><th>Response</th></tr></thead>
+            <tbody>
+              <tr><td>Wrong muscle fires</td><td>L1: intent_correct=0</td><td>Discrimination drill</td></tr>
+              <tr><td>Right intent, wrong pose</td><td>L2: high joint error</td><td>Reduce precision demand</td></tr>
+              <tr><td>Can't sustain grasp</td><td>L2: low hold_duration</td><td>Hold-duration task</td></tr>
+              <tr><td>No object contact</td><td>L3: contact=False</td><td>Visual guidance overlay</td></tr>
+              <tr><td>Correct but slow</td><td>L3: high reaction time</td><td>Time-pressure task</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alert al-g" style="margin-top:0.7rem;font-size:0.68rem">
+          <span>✓</span>
+          <span>Physics engine is the impartial judge. The RL agent cannot cheat it — a grasp either contacts correctly or it does not.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 11 — NINAPRO DATA STRATEGY
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-purple" style="width:400px;height:400px;bottom:-80px;left:-80px;animation-delay:3s"></div>
+  <div class="glow-num">10</div>
+  <div class="slide-content top">
+    <div class="slide-num">10 / 13</div>
+    <div class="slide-label animate-up">Data Strategy</div>
+    <div class="slide-title animate-up animate-up-d1">How Every Ninapro Dataset Is Used<br/><span style="font-size:1.5rem;color:#64748b">No New Data Required</span></div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="alert al-b animate-up animate-up-d2">
+      <span>📦</span>
+      <span><strong>Strategy:</strong> Held-out Ninapro subjects = simulated patients. Their recording sessions substitute for live sEMG streams. Each repetition = one rehabilitation session.</span>
+    </div>
+    <div class="t-wrap animate-up animate-up-d3">
+      <table>
+        <thead>
+          <tr><th>Database</th><th>Contents</th><th>Platform Role</th><th>Specific Use</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>DB1</strong></td><td>27 intact · 52 mvt · sEMG+kin</td><td>Foundation pre-train</td><td>Large clean corpus for universal encoder</td></tr>
+          <tr><td><strong>DB2</strong></td><td>40 intact · 49 mvt · +force</td><td>Foundation pre-train</td><td>Adds grasp force awareness</td></tr>
+          <tr><td><strong>DB3</strong></td><td>11 amputees · 49 mvt</td><td>Fine-tune + sim patients</td><td>s1–8 train · s9–11 held-out evaluation</td></tr>
+          <tr><td><strong>DB6</strong></td><td>10 subj · 2×/day × 5 days</td><td>Multi-session personalisation</td><td>10 sessions = 10 simulated rehab days · drift model $\alpha_f$</td></tr>
+          <tr><td><strong>DB7</strong></td><td>2 amputees · 6 mvt</td><td>Generalisation test</td><td>Entirely held-out — never in training</td></tr>
+          <tr><td><strong>DB8</strong></td><td>2 amputees · CyberGlove kin</td><td>Kinematic ground truth</td><td>GT for Biological Twin 21-DOF output validation</td></tr>
+          <tr><td><strong>DB9</strong></td><td>77 intact · 40 mvt · kin</td><td>Canonical pose library</td><td>Defines $\mathbf{q}^*_c$ for L2 auto-labelling</td></tr>
+          <tr><td><strong>DB10</strong></td><td>15 amputees + IMU</td><td>RL Therapist training pop.</td><td>45 subjects = synthetic patient pool · IMU context</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 12 — EVALUATION + KPIs
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-green" style="width:400px;height:400px;top:-60px;right:-60px;animation-delay:1s"></div>
+  <div class="glow-num">11</div>
+  <div class="slide-content top">
+    <div class="slide-num">11 / 13</div>
+    <div class="slide-label animate-up">Evaluation</div>
+    <div class="slide-title animate-up animate-up-d1">Key Performance Indicators</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="kpi-grid animate-up animate-up-d2">
+      <div class="kpi-card kv-b">
+        <div class="kpi-val">&gt; 82%</div>
+        <div class="kpi-name">CNN Amputee Accuracy</div>
+        <div class="kpi-desc">49-class on DB3 held-out subjects · Foundation Model + fine-tune</div>
+      </div>
+      <div class="kpi-card kv-g">
+        <div class="kpi-val">&lt; 8°</div>
+        <div class="kpi-name">Mean Joint Angle Error</div>
+        <div class="kpi-desc">Biological Twin vs. DB8 CyberGlove ground truth</div>
+      </div>
+      <div class="kpi-card kv-p">
+        <div class="kpi-val">&lt; 12</div>
+        <div class="kpi-name">Sessions to 80% Accuracy</div>
+        <div class="kpi-desc">RL Therapist curriculum · DB6 simulated patients</div>
+      </div>
+      <div class="kpi-card kv-a">
+        <div class="kpi-val">&lt; 10%</div>
+        <div class="kpi-name">Cross-Session Drift</div>
+        <div class="kpi-desc">Accuracy drop across 5 days without re-calibration · DB6</div>
+      </div>
+      <div class="kpi-card kv-c">
+        <div class="kpi-val">&lt; 80ms</div>
+        <div class="kpi-name">End-to-End Latency</div>
+        <div class="kpi-desc">sEMG → CNN → MuJoCo pose update → screen render</div>
+      </div>
+      <div class="kpi-card kv-r">
+        <div class="kpi-val">&lt; 2mm</div>
+        <div class="kpi-name">Photogrammetry Error</div>
+        <div class="kpi-desc">3D mesh vs. physical caliper · ArUco calibrated</div>
+      </div>
+    </div>
+    <div class="alert al-b animate-up animate-up-d3" style="margin-top:0.8rem">
+      <span>🔬</span>
+      <span><strong>6 ablation studies planned:</strong> EWC vs. naive FT · co-adaptation vs. static · contralateral bootstrap vs. standard · RL Therapist vs. fixed curriculum · Ninapro pre-train vs. scratch · kinematic regression vs. discrete classification</span>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 13 — TIMELINE + STACK
+════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="grid-bg"></div>
+  <div class="orb orb-blue" style="width:400px;height:400px;bottom:-80px;right:-80px;animation-delay:0s"></div>
+  <div class="glow-num">12</div>
+  <div class="slide-content top">
+    <div class="slide-num">12 / 13</div>
+    <div class="slide-label animate-up">Implementation Plan</div>
+    <div class="slide-title animate-up animate-up-d1">6-Month Build Sequence</div>
+    <div class="accent-line animate-up animate-up-d2"></div>
+    <div class="two-col animate-up animate-up-d2">
+      <div>
+        <div class="tl">
+          <div class="tl-item">
+            <div class="tl-dot-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-body">
+              <div class="tl-ttl">Month 1 — Foundation Model</div>
+              <div class="tl-desc">Download DB1–DB3. sEMG preprocessing. Pre-train CNN-LSTM on intact subjects. Baseline accuracy.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-body">
+              <div class="tl-ttl">Month 2 — Biological Twin</div>
+              <div class="tl-desc">Switch to 21-DOF kinematic regression. Fine-tune DB3 amputees. EWC. Contralateral bootstrap (L2).</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-body">
+              <div class="tl-ttl">Month 3 — Digital Twin Hand</div>
+              <div class="tl-desc">Extend arm.xml → 21-DOF hand. Contact grasp evaluator. Three-layer scoring. Latency testing.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-body">
+              <div class="tl-ttl">Month 4 — RL Therapist</div>
+              <div class="tl-desc">Virtual Patient Model. Two-agent overnight sandbox. RL Therapist on DB10 population.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot-col"><div class="tl-dot"></div><div class="tl-line"></div></div>
+            <div class="tl-body">
+              <div class="tl-ttl">Month 5 — Photogrammetry + Socket</div>
+              <div class="tl-desc">COLMAP + Open3D pipeline. ArUco validation. Socket pressure simulator. Volume model.</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot-col"><div class="tl-dot"></div></div>
+            <div class="tl-body">
+              <div class="tl-ttl">Month 6 — Integration + Ablations</div>
+              <div class="tl-desc">All 5 layers connected. 6 ablation studies. DB6 10-day simulation. Dashboard. Documentation.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.75rem;font-weight:700;color:#e2e8f0;margin-bottom:0.5rem">Technology Stack</p>
+        <div class="t-wrap">
+          <table>
+            <thead><tr><th>Component</th><th>Technology</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Physics</strong></td><td><span class="hl-a">MuJoCo</span> — extends existing env.py + arm.xml</td></tr>
+              <tr><td><strong>RL</strong></td><td><span class="hl-p">SB3 PPO</span> — reuses existing train.py</td></tr>
+              <tr><td><strong>Deep Learning</strong></td><td><span class="hl-g">PyTorch</span> — CNN-LSTM, EWC</td></tr>
+              <tr><td><strong>Signal Proc.</strong></td><td><span class="hl-c">SciPy + MNE</span> — filtering, windowing</td></tr>
+              <tr><td><strong>CV / Photogrammetry</strong></td><td><span class="hl-b">COLMAP + Open3D + MediaPipe</span></td></tr>
+              <tr><td><strong>Visualisation</strong></td><td><span class="hl-r">Matplotlib + Streamlit</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="alert al-g" style="margin-top:0.7rem;font-size:0.68rem">
+          <span>✓</span>
+          <span><strong>3 new pip installs only:</strong> <code style="font-family:var(--mono)">open3d &nbsp; pycolmap &nbsp; mediapipe</code><br/>Everything else already in requirements.txt.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SLIDE 14 — CLOSING
+════════════════════════════════════════════ -->
+<section data-transition="zoom" data-transition-speed="slow">
+  <div class="grid-bg"></div>
+  <div class="orb orb-blue"   style="width:600px;height:600px;top:-150px;right:-150px;animation-delay:0s"></div>
+  <div class="orb orb-purple" style="width:500px;height:500px;bottom:-150px;left:-100px;animation-delay:3s"></div>
+  <div class="orb orb-cyan"   style="width:300px;height:300px;top:40%;left:40%;animation-delay:1.5s;opacity:0.1"></div>
+  <div class="slide-content" style="align-items:flex-start;justify-content:center">
+    <div class="slide-num">13 / 13</div>
+    <div class="badge animate-up">RehabPath · Pure Software Platform</div>
+    <div class="title-main animate-up animate-up-d1">The Patient's AI</div>
+    <div class="title-sub animate-up animate-up-d2" style="max-width:700px">
+      From a single smartphone video to a fully personalised neural controller —<br/>
+      RehabPath replaces every high-friction physical step with digital intelligence.
+    </div>
+    <div class="animate-up animate-up-d3" style="margin-bottom:1.5rem">
+      <div class="flow" style="max-width:700px;font-size:0.65rem">
+        <div><span class="flow-box" style="color:#60a5fa">L0 Photogrammetry</span> <span class="arr">→</span> <span class="flow-box" style="color:#a78bfa">L1 Socket Sim</span> <span class="arr">→</span> <span class="flow-box" style="color:#22d3ee">L2 Bootstrap</span> <span class="arr">→</span> <span class="flow-box" style="color:#34d399">L3 Bio Twin</span> <span class="arr">→</span> <span class="flow-box" style="color:#fbbf24">L4 Digital Twin</span> <span class="arr">→</span> <span class="flow-box" style="color:#f87171">L5 RL Therapist</span></div>
+      </div>
+    </div>
+    <div class="card-grid-3 animate-up animate-up-d4">
+      <div class="icard">
+        <div class="icard-title" style="color:#60a5fa">Zero Hardware</div>
+        <p>Smartphone, webcam, standard sEMG sleeve. No scanners, no VR, no sensors to buy.</p>
+      </div>
+      <div class="icard">
+        <div class="icard-title" style="color:#34d399">Zero New Data</div>
+        <p>Ninapro DB1–DB10 (180+ acquisitions) covers pre-training, validation, and all ablations.</p>
+      </div>
+      <div class="icard">
+        <div class="icard-title" style="color:#a78bfa">Grows With Patient</div>
+        <p>Nightly co-adaptation loop ensures the controller improves every day, automatically.</p>
+      </div>
+    </div>
+    <div class="stats-row animate-up animate-up-d5" style="max-width:700px;margin-top:1.2rem">
+      <div class="stat-card"><div class="stat-num" style="color:#34d399">&gt;82%</div><div class="stat-lbl">CNN accuracy</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#60a5fa">&lt;8°</div><div class="stat-lbl">Joint error</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#a78bfa">&lt;12</div><div class="stat-lbl">Sessions to target</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#fbbf24">&lt;80ms</div><div class="stat-lbl">Latency</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:#f87171">&lt;2mm</div><div class="stat-lbl">Mesh error</div></div>
+    </div>
+  </div>
+</section>
+
+</div><!-- .slides -->
+</div><!-- .reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/5.1.0/reveal.min.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    transition: 'slide',
+    transitionSpeed: 'default',
+    backgroundTransition: 'fade',
+    controls: true,
+    progress: true,
+    slideNumber: false,
+    overview: true,
+    center: false,
+    touch: true,
+    loop: false,
+    fragments: true,
+    fragmentInURL: false,
+    history: true,
+    keyboard: true,
+    mouseWheel: false,
+    hideInactiveCursor: true,
+    hideCursorTime: 3000,
+    width: 1400,
+    height: 900,
+    margin: 0,
+    minScale: 0.5,
+    maxScale: 1.5,
+  });
+
+  // Re-render KaTeX after each slide change
+  Reveal.on('slidechanged', () => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left:'$$',right:'$$',display:true},
+          {left:'$',right:'$',display:false}
+        ]
+      });
+    }
+  });
+</script>
+</body>
+</html>

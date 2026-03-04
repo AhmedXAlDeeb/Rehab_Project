@@ -1,0 +1,72 @@
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+pip-wheel-metadata/
+
+# ─── Virtual Environments ────────────────────────────────────────────────────
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ─── Jupyter ─────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ─── ML / Training Artefacts ─────────────────────────────────────────────────
+# Trained model weights (can be large — use Git LFS or exclude)
+*.zip
+*.pkl
+*.pt
+*.pth
+*.onnx
+*.h5
+
+# Keep the existing trained model as an exception (small reference model)
+!resources/projects/RehabArm-RL-Sim2Real/models/rehab_arm_ppo.zip
+
+# TensorBoard / W&B logs
+runs/
+wandb/
+lightning_logs/
+
+# ─── Data Files ──────────────────────────────────────────────────────────────
+# Raw Ninapro data (large — do not commit, document in README)
+data/
+*.mat
+*.csv
+!resources/projects/RehabArm-RL-Sim2Real/logs/*.csv
+
+# ─── OS & Editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# ─── VS Code ─────────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+
+# ─── MuJoCo ──────────────────────────────────────────────────────────────────
+*.mjcf.bak
+mujoco_env_*/
+
+# ─── Certificates / Private ──────────────────────────────────────────────────
+*.pem
+*.key
+*.cert
+resources/research/Certificate*
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log

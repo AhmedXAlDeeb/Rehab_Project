@@ -1,0 +1,22 @@
+Ninapro is a publicly available multimodal database aimed at fostering machine learning research on human, robotic & prosthetic hands.
+The 10 Ninapro datasets include a total of over 180 data acquisitions from intact subjects and transradial hand amputees (including electromyography, kinematic, inertial, clinical, neurocognitive and eye-hand coordination data).
+The datasets are accessible using the links in the table below and are thoroughly described in the linked open access scientific papers.
+Please, cite the corresponding article when using the datasets.
+
+We hope that you will enjoy Ninapro.
+The Ninapro team
+
+
+Ninapro datasets
+Name	Aim	# of subjects	# of movements	EMG setup	Modalities	Link
+DB1	Classification or regression	27	52	10 Otto Bock	sEMG, kinematic	DB1
+DB2	Classification or regression	40	49	12 Delsys Trigno	sEMG, kinematic, inertial, force	DB2
+DB3	Classification or regression	11 amputees	49	12 Delsys Trigno	sEMG, inertial	DB3
+DB4	Classification or regression	10	52	12 Cometa	sEMG, kinematic	DB4
+DB5	Classification or regression	10	52	2 Thalmic Myo Armbands (16 electrodes)	sEMG, inertial	DB5
+DB6	Repeatability (2 acquisitions a day for 5 days)	10	7	14 Delsys Trigno	sEMG, inertial, eye tracking glasses with scene camera	DB6
+DB7	Classification or regression	20 intacts, 2 amputees	6	12 Delsys Trigno	sEMG, inertial	DB7
+DB8	Finger regression	10 intacts, 2 amptuees	9	16 Delsys Trigno	sEMG, kinematic	DB8
+DB9	Large-scale kinematics analyses	77	40		sEMG, kinematic	DB9
+DB10 - Megane Pro	Eye-hand coordination, classification	30 intacts, 15 amputees	10	12 Delsys Trigno	sEMG, inertial, eye tracking glasses with camera, behavioral, clinical	DB10
+
