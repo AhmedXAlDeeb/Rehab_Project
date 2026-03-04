@@ -1,0 +1,1596 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RehabPath — AI-Powered Prosthetic Rehabilitation</title>
+
+<!-- Reveal.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css"/>
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>
+<!-- Font -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<!-- Phosphor Icons (Bold) — domain-relevant, modern icon set -->
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css"/>
+
+<style>
+/* ═══════════════════════════════════════════
+   ROOT & GLOBAL
+   ═══════════════════════════════════════════ */
+:root {
+  --bg-primary: #050a18;
+  --bg-card: rgba(15, 23, 42, 0.85);
+  --accent-blue: #3b82f6;
+  --accent-cyan: #22d3ee;
+  --accent-green: #10b981;
+  --accent-purple: #8b5cf6;
+  --accent-amber: #f59e0b;
+  --accent-red: #ef4444;
+  --accent-pink: #ec4899;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+  --glass: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(59, 130, 246, 0.15);
+  --glow-blue: 0 0 30px rgba(59, 130, 246, 0.3);
+}
+
+.reveal {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-primary);
+}
+.reveal .slides { text-align: left; }
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.reveal h1 { font-size: 2.8rem; }
+.reveal h2 { font-size: 2rem; margin-bottom: 0.6em; }
+.reveal h3 { font-size: 1.3rem; color: var(--accent-cyan); margin-bottom: 0.4em; }
+.reveal p { font-size: 0.88rem; line-height: 1.65; color: var(--text-secondary); }
+.reveal section { padding: 40px 60px !important; }
+.reveal .slide-number { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; }
+
+/* ═══════════════════════════════════════════
+   LIVE BACKGROUND — Neural Particle Canvas
+   ═══════════════════════════════════════════ */
+#particle-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: -1;
+  background: radial-gradient(ellipse at 30% 50%, #0a1628 0%, #050a18 50%, #020515 100%);
+}
+
+/* ═══════════════════════════════════════════
+   GLASS CARDS
+   ═══════════════════════════════════════════ */
+.glass-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 28px 32px;
+  backdrop-filter: blur(12px);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+.glass-card:hover { transform: translateY(-3px); box-shadow: var(--glow-blue); }
+
+.stat-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  text-align: center;
+  backdrop-filter: blur(12px);
+}
+.stat-val {
+  font-size: 2.4rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+}
+.stat-label { font-size: 0.72rem; color: var(--text-dim); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ═══════════════════════════════════════════
+   AGENT QUOTE BOX
+   ═══════════════════════════════════════════ */
+.agent-quote {
+  position: relative;
+  background: var(--glass);
+  border-left: 3px solid var(--accent-purple);
+  border-radius: 0 12px 12px 0;
+  padding: 16px 22px 16px 26px;
+  margin: 14px 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.agent-quote .agent-name {
+  display: inline-block;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 0.7rem;
+  margin-top: 8px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.agent-quote.patient { border-left-color: var(--accent-amber); }
+.agent-quote.patient .agent-name { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+.agent-quote.clinical { border-left-color: var(--accent-green); }
+.agent-quote.clinical .agent-name { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+.agent-quote.pm { border-left-color: var(--accent-pink); }
+.agent-quote.pm .agent-name { background: rgba(236,72,153,0.15); color: var(--accent-pink); }
+.agent-quote.researcher { border-left-color: var(--accent-cyan); }
+.agent-quote.researcher .agent-name { background: rgba(34,211,238,0.15); color: var(--accent-cyan); }
+.agent-quote.engineer { border-left-color: var(--accent-blue); }
+.agent-quote.engineer .agent-name { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+
+/* ═══════════════════════════════════════════
+   GRID LAYOUTS
+   ═══════════════════════════════════════════ */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+.flex-row { display: flex; gap: 20px; align-items: stretch; }
+
+/* ═══════════════════════════════════════════
+   LAYER BADGES
+   ═══════════════════════════════════════════ */
+.layer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.lb-blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); border: 1px solid rgba(59,130,246,0.25); }
+.lb-cyan { background: rgba(34,211,238,0.15); color: var(--accent-cyan); border: 1px solid rgba(34,211,238,0.25); }
+.lb-green { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.25); }
+.lb-amber { background: rgba(245,158,11,0.15); color: var(--accent-amber); border: 1px solid rgba(245,158,11,0.25); }
+.lb-red { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.25); }
+.lb-purple { background: rgba(139,92,246,0.15); color: var(--accent-purple); border: 1px solid rgba(139,92,246,0.25); }
+
+/* ═══════════════════════════════════════════
+   FLOW / ARCHITECTURE DIAGRAM
+   ═══════════════════════════════════════════ */
+.arch-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.arch-node {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  text-align: center;
+  min-width: 120px;
+  transition: all 0.3s;
+}
+.arch-node:hover { transform: scale(1.05); box-shadow: var(--glow-blue); }
+.arch-node .node-icon { font-size: 1.6rem; margin-bottom: 6px; }
+.arch-node .node-label { font-size: 0.68rem; font-weight: 600; color: var(--text-primary); }
+.arch-node .node-sub { font-size: 0.58rem; color: var(--text-dim); margin-top: 3px; }
+.arch-arrow { color: var(--accent-blue); font-size: 1.2rem; opacity: 0.5; }
+
+/* ═══════════════════════════════════════════
+   KPI CARDS
+   ═══════════════════════════════════════════ */
+.kpi-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 18px 16px;
+  text-align: center;
+}
+.kpi-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.kpi-name { font-size: 0.68rem; font-weight: 600; color: var(--text-primary); margin-top: 6px; }
+.kpi-desc { font-size: 0.56rem; color: var(--text-dim); margin-top: 4px; }
+.kpi-blue .kpi-val { color: var(--accent-blue); }
+.kpi-green .kpi-val { color: var(--accent-green); }
+.kpi-purple .kpi-val { color: var(--accent-purple); }
+.kpi-amber .kpi-val { color: var(--accent-amber); }
+.kpi-cyan .kpi-val { color: var(--accent-cyan); }
+.kpi-red .kpi-val { color: var(--accent-red); }
+
+/* ═══════════════════════════════════════════
+   PAIN POINT ICONS
+   ═══════════════════════════════════════════ */
+.pain-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+.pain-icon {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+.pain-icon.red { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+.pain-icon.amber { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+.pain-icon.blue { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+.pain-text { flex: 1; }
+.pain-text > strong { font-size: 0.8rem; color: var(--text-primary); display: block; margin-bottom: 2px; }
+.pain-text span { font-size: 0.7rem; color: var(--text-dim); line-height: 1.45; }
+.pain-text span strong { display: inline; font-size: inherit; }
+
+/* ═══════════════════════════════════════════
+   GAP BRIDGE VISUAL
+   ═══════════════════════════════════════════ */
+.bridge-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 24px 0;
+}
+.bridge-side {
+  background: var(--glass);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 12px;
+  padding: 18px 22px;
+  width: 200px;
+  text-align: center;
+}
+.bridge-center {
+  position: relative;
+  width: 180px;
+  height: 4px;
+  margin: 0 -2px;
+}
+.bridge-center .bridge-line {
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(239,68,68,0.4), var(--accent-cyan), rgba(16,185,129,0.4));
+  border-radius: 2px;
+  animation: bridgePulse 2s ease-in-out infinite;
+}
+.bridge-center .bridge-label {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+@keyframes bridgePulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.bridge-side.right { border-color: rgba(16,185,129,0.25); }
+
+/* ═══════════════════════════════════════════
+   TIMELINE BAR
+   ═══════════════════════════════════════════ */
+.timeline-bar {
+  display: flex;
+  gap: 0;
+  margin: 18px 0;
+}
+.tl-segment {
+  flex: 1;
+  padding: 12px 10px;
+  text-align: center;
+  border-bottom: 3px solid;
+  position: relative;
+}
+.tl-segment .tl-month { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.tl-segment .tl-task { font-size: 0.58rem; color: var(--text-dim); margin-top: 4px; }
+
+/* ═══════════════════════════════════════════
+   SECTION LABELS / TAGS
+   ═══════════════════════════════════════════ */
+.section-tag {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: rgba(59,130,246,0.1);
+  color: var(--accent-blue);
+  border: 1px solid rgba(59,130,246,0.2);
+}
+
+/* ═══════════════════════════════════════════
+   TITLE SLIDE SPECIAL
+   ═══════════════════════════════════════════ */
+.title-slide h1 {
+  font-size: 3.6rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffffff 0%, var(--accent-cyan) 50%, var(--accent-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.3em;
+  line-height: 1.1;
+}
+.title-slide .subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  font-weight: 300;
+  margin-bottom: 1.5em;
+  line-height: 1.5;
+}
+.title-slide .meta {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 20px;
+}
+.title-slide .meta span { margin: 0 8px; }
+
+/* Pulse ring animation for title */
+.pulse-ring {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  border: 1px solid rgba(34,211,238,0.1);
+  top: 50%;
+  right: -60px;
+  transform: translateY(-50%);
+  animation: pulseExpand 4s ease-in-out infinite;
+}
+.pulse-ring:nth-child(2) { animation-delay: 1.3s; width: 400px; height: 400px; }
+.pulse-ring:nth-child(3) { animation-delay: 2.6s; width: 500px; height: 500px; }
+@keyframes pulseExpand {
+  0% { transform: translateY(-50%) scale(0.8); opacity: 0.6; }
+  100% { transform: translateY(-50%) scale(1.4); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   TABLE STYLES
+   ═══════════════════════════════════════════ */
+.reveal table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+  margin: 12px 0;
+}
+.reveal table th {
+  background: rgba(59,130,246,0.1);
+  color: var(--accent-blue);
+  font-weight: 600;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+}
+.reveal table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(148,163,184,0.08);
+  color: var(--text-secondary);
+}
+.reveal table tr:hover td { background: rgba(59,130,246,0.04); }
+
+/* ═══════════════════════════════════════════
+   REFERENCE LIST
+   ═══════════════════════════════════════════ */
+.ref-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.ref-list li {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  padding-left: 22px;
+  position: relative;
+  line-height: 1.5;
+}
+.ref-list li::before {
+  content: attr(data-num);
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: var(--accent-blue);
+  font-size: 0.6rem;
+}
+
+/* ═══════════════════════════════════════════
+   MISC UTILITIES
+   ═══════════════════════════════════════════ */
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.text-gradient-green {
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.text-gradient-amber {
+  background: linear-gradient(135deg, var(--accent-amber), var(--accent-red));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.highlight { color: var(--accent-cyan); font-weight: 600; }
+.small { font-size: 0.7rem; }
+.tiny { font-size: 0.6rem; color: var(--text-dim); }
+.mb-0 { margin-bottom: 0 !important; }
+.mb-1 { margin-bottom: 10px !important; }
+.mt-1 { margin-top: 10px !important; }
+.mt-2 { margin-top: 20px !important; }
+.center { text-align: center; }
+
+/* Animated underline */
+.underline-anim {
+  position: relative;
+  display: inline-block;
+}
+.underline-anim::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+.present .underline-anim::after,
+.underline-anim:hover::after { width: 100%; }
+
+/* Business model icon cards */
+.biz-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s;
+}
+.biz-card:hover { border-color: var(--accent-cyan); box-shadow: var(--glow-blue); }
+.biz-icon { font-size: 2rem; margin-bottom: 10px; }
+.biz-title { font-size: 0.78rem; font-weight: 700; color: var(--text-primary); }
+.biz-desc { font-size: 0.64rem; color: var(--text-dim); margin-top: 6px; line-height: 1.4; }
+.biz-price { font-size: 1rem; font-weight: 800; color: var(--accent-cyan); margin-top: 8px; }
+
+/* AI statement pill */
+.ai-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: rgba(139,92,246,0.12);
+  border: 1px solid rgba(139,92,246,0.25);
+  color: var(--accent-purple);
+  margin: 4px 4px;
+}
+.ai-pill i { font-size: 0.8rem; }
+
+/* Signal wave animation for EMG visual */
+.emg-wave {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 40px;
+  margin: 12px auto;
+  justify-content: center;
+}
+.emg-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent-cyan);
+  animation: emgPulse 1.2s ease-in-out infinite;
+}
+@keyframes emgPulse {
+  0%, 100% { height: 8px; opacity: 0.4; }
+  50% { height: 36px; opacity: 1; }
+}
+
+/* Icon circle */
+.icon-circle {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(59,130,246,0.3); border-radius: 4px; }
+
+/* ═══════════════════════════════════════════
+   FLOATING GRADIENT ORBS  (background depth)
+   ═══════════════════════════════════════════ */
+.bg-effects {
+  position: fixed; top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: -1; pointer-events: none; overflow: hidden;
+}
+.floating-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(100px); opacity: 0.12;
+}
+.orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, var(--accent-cyan), transparent 70%);
+  top: -10%; left: -5%;
+  animation: orbDrift1 25s ease-in-out infinite;
+}
+.orb-2 {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, var(--accent-purple), transparent 70%);
+  bottom: -15%; right: -8%;
+  animation: orbDrift2 30s ease-in-out infinite;
+}
+.orb-3 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, var(--accent-blue), transparent 70%);
+  top: 35%; left: 55%;
+  animation: orbDrift3 22s ease-in-out infinite;
+}
+.orb-4 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, var(--accent-green), transparent 70%);
+  top: 65%; left: 15%;
+  animation: orbDrift4 28s ease-in-out infinite;
+}
+@keyframes orbDrift1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(80px,60px) scale(1.1); }
+  66%     { transform: translate(-40px,100px) scale(0.95); }
+}
+@keyframes orbDrift2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(-60px,-80px) scale(1.15); }
+  66%     { transform: translate(50px,-40px) scale(0.9); }
+}
+@keyframes orbDrift3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  25%     { transform: translate(-100px,40px) scale(1.05); }
+  50%     { transform: translate(-50px,-60px) scale(1.1); }
+  75%     { transform: translate(60px,-20px) scale(0.95); }
+}
+@keyframes orbDrift4 {
+  0%,100% { transform: translate(0,0); }
+  50%     { transform: translate(70px,-50px); }
+}
+
+/* ═══════════════════════════════════════════
+   ENHANCED ENTRANCE & HOVER ANIMATIONS
+   ═══════════════════════════════════════════ */
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(28px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity:0; transform:scale(0.85); }
+  to   { opacity:1; transform:scale(1); }
+}
+@keyframes gentleFloat {
+  0%,100% { transform:translateY(0); }
+  50%     { transform:translateY(-6px); }
+}
+
+/* Reveal.js fragment entrance */
+.reveal .slides section .fragment.visible {
+  animation: fadeInUp 0.55s ease-out both;
+}
+
+/* Glass card enhanced hover */
+.glass-card {
+  transition: transform 0.4s cubic-bezier(.4,0,.2,1),
+              box-shadow 0.4s cubic-bezier(.4,0,.2,1),
+              border-color 0.4s ease;
+}
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 0 35px rgba(34,211,238,0.15), 0 12px 40px rgba(0,0,0,0.35);
+  border-color: rgba(34,211,238,0.3);
+}
+
+/* Stat card hover */
+.stat-card { transition: all 0.35s ease; }
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 28px rgba(59,130,246,0.2);
+}
+
+/* Section tag shimmer */
+.section-tag { position: relative; overflow: hidden; }
+.section-tag::after {
+  content: '';
+  position: absolute; top:0; left:-100%;
+  width: 200%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+  animation: shimmer 3.5s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
+}
+
+/* Gentle float utility */
+.float-anim { animation: gentleFloat 4s ease-in-out infinite; }
+
+/* Hex grid decorative pattern (right edge) */
+.hex-pattern {
+  position: fixed; top:0; right:0;
+  width: 250px; height: 100vh;
+  z-index: -1; opacity: 0.025; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%2322d3ee' fill-opacity='1'%3E%3Cpath d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.9v12.7l10.99 6.34 11-6.35V17.9l-11-6.34L3 17.9zM0 15l12.98-7.5V0h-2v6.35L0 12.69v2.3zm0 18.5L12.98 41v8h-2v-6.85L0 35.81v-2.3zM15 0v7.5L27.99 15H28v-2.31h-.01L17 6.35V0h-2zm0 49v-8l12.99-7.5H28v2.31h-.01L17 42.15V49h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ LIVE PARTICLE BACKGROUND ═══ -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- Floating gradient orbs for depth -->
+<div class="bg-effects">
+  <div class="floating-orb orb-1"></div>
+  <div class="floating-orb orb-2"></div>
+  <div class="floating-orb orb-3"></div>
+  <div class="floating-orb orb-4"></div>
+</div>
+<div class="hex-pattern"></div>
+
+<div class="reveal">
+<div class="slides">
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 1 — TITLE
+     ════════════════════════════════════════════════════════ -->
+<section class="title-slide" data-transition="zoom-in fade-out">
+  <div style="position:relative; z-index:1;">
+    <div class="section-tag" style="background:rgba(34,211,238,0.1);color:var(--accent-cyan);border-color:rgba(34,211,238,0.2);">
+      SBME · 4th Year · Rehabilitation Engineering
+    </div>
+    <h1>Rehabilitation Project (DD - DigitalDigit)</h1>
+    <p class="subtitle">
+      An AI-Powered Digital Twin Platform for<br/>
+      Personalised Prosthetic 
+    </p>
+    <!-- <div style="display:flex;gap:14px;margin-top:24px;flex-wrap:wrap;">
+      <span class="layer-badge lb-cyan"><i class="ph-bold ph-brain"></i> Foundation Model</span>
+      <span class="layer-badge lb-green"><i class="ph-bold ph-hand"></i> Digital Twin</span>
+      <span class="layer-badge lb-purple"><i class="ph-bold ph-robot"></i> RL Therapist</span>
+      <span class="layer-badge lb-amber"><i class="ph-bold ph-database"></i> Ninapro DB1–10</span>
+    </div> -->
+    <p class="meta" style="margin-top:28px;">
+      <i class="ph-bold ph-calendar-blank" style="color:var(--accent-blue);margin-right:4px;"></i> 2025–2026
+      <span>·</span>
+      <i class="ph-bold ph-cpu" style="color:var(--accent-purple);margin-right:4px;"></i> Pure Software — No Hardware Required
+      <span>·</span>
+      <i class="ph-bold ph-shield-check" style="color:var(--accent-green);margin-right:4px;"></i> 0 New Data Acquisition
+    </p>
+  </div>
+  <div class="pulse-ring"></div>
+  <div class="pulse-ring"></div>
+  <div class="pulse-ring"></div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 2 — PROBLEM: THE REAL PAIN
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag">01 · Problem Statement</div>
+  <h2>The Real <span class="text-gradient-amber">Pain</span> of Upper-Limb Amputees</h2>
+
+  <div class="grid-2">
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="pain-item fragment" data-fragment-index="1">
+        <div class="pain-icon" style="background:rgba(139,92,246,0.15);color:var(--accent-purple);width:38px;height:38px;font-size:1rem;"><i class="ph-bold ph-brain"></i></div>
+        <div class="pain-text">
+          <strong style="font-size:0.82rem;">Neural Pathways Degenerate</strong>
+          <span style="font-size:0.68rem;">Motor cortex areas begin to <strong style="color:var(--accent-red);">remap and shrink</strong> after amputation. Without early stimulation the brain "forgets" how to drive the hand — every week without practice is lost neural real estate.</span>
+        </div>
+      </div>
+
+      <div class="pain-item fragment" data-fragment-index="2">
+        <div class="pain-icon red" style="width:38px;height:38px;font-size:1rem;"><i class="ph-bold ph-currency-dollar"></i></div>
+        <div class="pain-text">
+          <strong style="font-size:0.82rem;">No Way to Test Before Buying</strong>
+          <span style="font-size:0.68rem;">No way to test patient–device compatibility <em>before</em> fabrication. Mismatches found after delivery at <strong style="color:var(--accent-red);">$20k–$100k</strong> per device. 30–50 % abandon within year 1.</span>
+        </div>
+      </div>
+
+      <div class="pain-item fragment" data-fragment-index="3">
+        <div class="pain-icon" style="background:rgba(245,158,11,0.15);color:var(--accent-amber);width:38px;height:38px;font-size:1rem;"><i class="ph-bold ph-hand"></i></div>
+        <div class="pain-text">
+          <strong style="font-size:0.82rem;">Poor EMG Control</strong>
+          <span style="font-size:0.68rem;">Hand has <strong>20+ DOF</strong> but controllers distinguish only <strong style="color:var(--accent-amber);">2–6 modes</strong>. Pattern-recognition accuracy degrades outside the lab — the controller is the bottleneck.</span>
+        </div>
+      </div>
+
+      <div class="glass-card fragment" data-fragment-index="4" style="padding:10px 14px;border-left:3px solid var(--accent-purple);">
+        <p style="font-size:0.68rem;margin:0;color:var(--text-secondary);line-height:1.5;">
+          <i class="ph-bold ph-warning-circle" style="color:var(--accent-purple);margin-right:4px;"></i>
+          <strong style="color:var(--accent-purple);">Root Cause:</strong>
+          Amputees can't see or practice with a prosthetic hand before they get one — and every day without motor practice, the neural pathways that would control it are fading.
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <!-- YouTube Video Embed -->
+      <div class="glass-card" style="padding:0;overflow:hidden;border-radius:14px;">
+        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
+          <iframe 
+            src="https://www.youtube.com/embed/0lLmzr02uW8?si=-fVi1D79BCFwRf8t" 
+            title="Prosthetic Hand Reality" 
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:14px;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+      <p class="tiny center mt-1" style="margin-bottom:0;">
+        <i class="ph-bold ph-play-circle" style="color:var(--accent-red);margin-right:4px;"></i>
+        The reality of prosthetic hand control today
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 3 — PROBLEM: CLINICAL & INDUSTRY PERSPECTIVE
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag">01 · Problem Statement — Clinical & Industry</div>
+  <h2>Three <span class="text-gradient-amber">Walls</span> the Field Hits</h2>
+
+  <div class="grid-3">
+    <div class="glass-card fragment" data-fragment-index="1">
+      <div class="icon-circle" style="background:rgba(239,68,68,0.12);color:var(--accent-red);">
+        <i class="ph-bold ph-ruler"></i>
+      </div>
+      <h3 style="color:var(--accent-red);font-size:1rem;">Measurement Wall</h3>
+      <p style="font-size:0.74rem;">
+        Socket fitting relies on 2–3 in-person visits with caliper measurements.
+        The residual limb changes volume <strong>daily</strong>.
+        Current process can't track that.
+      </p>
+    </div>
+
+    <div class="glass-card fragment" data-fragment-index="2">
+      <div class="icon-circle" style="background:rgba(245,158,11,0.12);color:var(--accent-amber);">
+        <i class="ph-bold ph-brain"></i>
+      </div>
+      <h3 style="color:var(--accent-amber);font-size:1rem;">Motor Relearning Wall</h3>
+      <p style="font-size:0.74rem;">
+        Patients must consciously produce 49 labelled movements following verbal
+        instructions they don't understand. Primary source of calibration failure.
+      </p>
+    </div>
+
+    <div class="glass-card fragment" data-fragment-index="3">
+      <div class="icon-circle" style="background:rgba(59,130,246,0.12);color:var(--accent-blue);">
+        <i class="ph-bold ph-cpu"></i>
+      </div>
+      <h3 style="color:var(--accent-blue);font-size:1rem;">Controller Wall</h3>
+      <p style="font-size:0.74rem;">
+        EMG classifiers are calibrated once and frozen.
+        Signals drift across sessions. Performance degrades.
+        No adaptation between visits.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 4 — THE SOLUTION: DIGITAL PATIENT TWIN
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag">03 · Our Solution</div>
+  <h2>A <span class="text-gradient">Digital Patient Twin</span></h2>
+
+  <p style="font-size:0.95rem;color:var(--text-primary);max-width:880px;margin:0 auto 30px;line-height:1.7;">
+    We build a <span class="highlight">digital replica of the patient</span> — driven by their
+    <strong>limb shape</strong> and <strong>EMG signals</strong> — so they can train, test,
+    and improve <em>before any physical intervention</em>.
+  </p>
+
+  <!-- Central concept: Twin + 4 capabilities -->
+  <div style="display:flex;align-items:stretch;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:28px;">
+
+    <!-- Left: What feeds the twin -->
+    <div class="glass-card fragment" style="padding:22px 20px;flex:0 1 220px;border-left:3px solid var(--accent-cyan);text-align:center;">
+      <div style="font-size:2.2rem;margin-bottom:8px;">🧬</div>
+      <h3 style="font-size:0.88rem;color:var(--accent-cyan);margin-bottom:8px;">Patient Data In</h3>
+      <p style="font-size:0.72rem;color:var(--text-dim);line-height:1.6;margin:0;">
+        <i class="ph-bold ph-cube" style="color:var(--accent-blue);margin-right:4px;"></i> 3D limb shape<br/>
+        <i class="ph-bold ph-wave-sine" style="color:var(--accent-purple);margin-right:4px;"></i> EMG muscle signals<br/>
+        <i class="ph-bold ph-clock-counter-clockwise" style="color:var(--accent-amber);margin-right:4px;"></i> Session history
+      </p>
+    </div>
+
+    <!-- Centre: The Twin itself -->
+    <div class="glass-card fragment" style="padding:22px 24px;flex:0 1 260px;border:2px solid rgba(139,92,246,0.35);text-align:center;background:rgba(139,92,246,0.06);">
+      <div style="font-size:2.8rem;margin-bottom:6px;">🪞</div>
+      <h3 style="font-size:1rem;color:var(--accent-purple);margin-bottom:6px;">Digital Patient Twin</h3>
+      <p style="font-size:0.72rem;color:var(--text-dim);line-height:1.6;margin:0;">
+        A virtual replica that <strong>thinks, moves, and learns</strong><br/>exactly like the real patient
+      </p>
+    </div>
+
+    <!-- Right: What the twin enables -->
+    <div class="glass-card fragment" style="padding:22px 20px;flex:0 1 220px;border-left:3px solid var(--accent-green);text-align:center;">
+      <div style="font-size:2.2rem;margin-bottom:8px;">✋</div>
+      <h3 style="font-size:0.88rem;color:var(--accent-green);margin-bottom:8px;">Patient Gets</h3>
+      <p style="font-size:0.72rem;color:var(--text-dim);line-height:1.6;margin:0;">
+        <i class="ph-bold ph-check-circle" style="color:var(--accent-green);margin-right:4px;"></i> Confident prosthetic use<br/>
+        <i class="ph-bold ph-check-circle" style="color:var(--accent-green);margin-right:4px;"></i> Preserved brain pathways<br/>
+        <i class="ph-bold ph-check-circle" style="color:var(--accent-green);margin-right:4px;"></i> Control that improves daily
+      </p>
+    </div>
+  </div>
+
+  <!-- 4 key capabilities -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+    <div class="glass-card fragment" style="padding:16px 14px;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:6px;">🧠</div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--accent-red);margin-bottom:4px;">Prevent Neuro-degeneration</div>
+      <div style="font-size:0.62rem;color:var(--text-dim);">Daily training keeps the brain's motor cortex active — even without a physical hand</div>
+    </div>
+    <div class="glass-card fragment" style="padding:16px 14px;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:6px;">🎮</div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--accent-green);margin-bottom:4px;">Daily Virtual Training</div>
+      <div style="font-size:0.62rem;color:var(--text-dim);">Practice real tasks on a virtual hand at home — no clinic, no hardware needed</div>
+    </div>
+    <div class="glass-card fragment" style="padding:16px 14px;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:6px;">🔬</div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--accent-cyan);margin-bottom:4px;">Test Before Intervention</div>
+      <div style="font-size:0.62rem;color:var(--text-dim);">Simulate socket fit & prosthetic control before the patient ever touches real hardware</div>
+    </div>
+    <div class="glass-card fragment" style="padding:16px 14px;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:6px;">♾️</div>
+      <div style="font-size:0.78rem;font-weight:700;color:var(--accent-purple);margin-bottom:4px;">Continual Learning</div>
+      <div style="font-size:0.62rem;color:var(--text-dim);">Every session makes the controller smarter — building on the patient's full history</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 6 — OUR DATA: NINAPRO DATABASE
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag">04 · Our Data</div>
+  <h2>The <span class="text-gradient">Ninapro</span> Database</h2>
+
+  <p style="font-size:0.88rem;color:var(--text-primary);max-width:880px;margin:0 auto 22px;line-height:1.7;">
+    The largest publicly available multimodal dataset for prosthetic hand research —
+    <span class="highlight">10 datasets</span>, <span class="highlight">180+ subjects</span>
+    (intact &amp; amputees), covering sEMG, kinematics, inertial, clinical, and eye-hand coordination data.
+  </p>
+
+  <div class="grid-2" style="align-items:start;">
+    <!-- Left: Dataset image -->
+    <div style="text-align:center;">
+      <div class="glass-card" style="padding:14px;display:inline-block;">
+        <img src="media/dataset.png" alt="Ninapro Database Overview"
+             style="max-width:100%;border-radius:10px;display:block;" />
+      </div>
+    </div>
+
+    <!-- Right: Key highlights + stats -->
+    <div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div class="stat-card fragment">
+          <div class="stat-val" style="font-size:1.8rem;">180+</div>
+          <div class="stat-label">Subjects</div>
+          <p class="tiny mt-1 mb-0">Intact subjects &amp;<br/>transradial amputees</p>
+        </div>
+        <div class="stat-card fragment">
+          <div class="stat-val" style="font-size:1.8rem;">52</div>
+          <div class="stat-label">Movement Classes</div>
+          <p class="tiny mt-1 mb-0">Comprehensive hand &amp;<br/>wrist gesture vocabulary</p>
+        </div>
+        <div class="stat-card fragment">
+          <div class="stat-val" style="font-size:1.8rem;">10</div>
+          <div class="stat-label">Datasets</div>
+          <p class="tiny mt-1 mb-0">DB1–DB10 with varied<br/>EMG setups &amp; modalities</p>
+        </div>
+        <div class="stat-card fragment">
+          <div class="stat-val" style="font-size:1.8rem;font-size:1.4rem;">Multi</div>
+          <div class="stat-label">Modalities</div>
+          <p class="tiny mt-1 mb-0">sEMG, kinematics, inertial,<br/>eye tracking, clinical</p>
+        </div>
+      </div>
+
+      <div class="glass-card fragment" style="padding:14px 18px;border-left:3px solid var(--accent-cyan);font-size:0.68rem;color:var(--text-dim);line-height:1.6;">
+        <strong style="color:var(--accent-cyan);font-size:0.72rem;">
+          <i class="ph-bold ph-quotes" style="margin-right:4px;"></i> Citation
+        </strong><br/>
+        Atzori M. et al., "Electromyography data for non-invasive naturally-controlled robotic hand prostheses,"
+        <em>Scientific Data</em>, 2014.<br/>
+        Pizzolato S. et al., "Comparison of six electromyography acquisition setups on hand movement classification tasks,"
+        <em>PLOS ONE</em>, 2017.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 7 — REAL-WORLD APPLICATION & STARTUP VISION
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag">06 · Startup Vision</div>
+  <h2>Real-World Application &<br/><span class="text-gradient">Market Opportunity</span></h2>
+
+  <div class="grid-2">
+    <div>
+      <div class="stat-card" style="margin-bottom:16px;">
+        <div class="stat-val">$12.4B</div>
+        <div class="stat-label">Global Prosthetics Market (2024) · Growing 5.2% CAGR</div>
+      </div>
+      <div class="grid-2" style="gap:12px;">
+        <div class="stat-card">
+          <div class="stat-val" style="font-size:1.6rem;">185K</div>
+          <div class="stat-label">Upper-limb amputations / year worldwide</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val" style="font-size:1.6rem;background:linear-gradient(135deg,var(--accent-red),var(--accent-amber));-webkit-background-clip:text;">~0%</div>
+          <div class="stat-label">Software penetration in rehab workflow</div>
+        </div>
+      </div>
+
+      <div class="agent-quote pm mt-1" style="font-size:0.72rem;">
+        "We're not competing with device manufacturers. We're building the intelligence layer
+        that makes their hardware actually work for the patient."
+        <br/><span class="agent-name"><i class="ph-bold ph-chart-pie-slice"></i> Hana — Product Manager</span>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size:0.9rem;margin-bottom:14px;"><i class="ph-bold ph-storefront" style="margin-right:4px;"></i>Business Model</h3>
+      <div class="grid-2" style="gap:12px;">
+        <div class="biz-card">
+          <div class="biz-icon">🏥</div>
+          <div class="biz-title">B2B — Clinics</div>
+          <div class="biz-desc">SaaS per patient, per month. Upload scans, track progress, generate reports.</div>
+          <div class="biz-price">$200/patient/mo</div>
+        </div>
+        <div class="biz-card">
+          <div class="biz-icon">📱</div>
+          <div class="biz-title">B2C — Patients</div>
+          <div class="biz-desc">Home practice app. Freemium with premium AI coaching.</div>
+          <div class="biz-price">$29/mo premium</div>
+        </div>
+        <div class="biz-card">
+          <div class="biz-icon">🔬</div>
+          <div class="biz-title">Data Flywheel</div>
+          <div class="biz-desc">Every session improves the foundation model. Competitive moat grows with usage.</div>
+          <div class="biz-price" style="color:var(--accent-green);">Defensible</div>
+        </div>
+        <div class="biz-card">
+          <div class="biz-icon">🤝</div>
+          <div class="biz-title">Partnerships</div>
+          <div class="biz-desc">Integrate with Ottobock, Össur, Open Bionics as their digital rehab layer.</div>
+          <div class="biz-price" style="color:var(--accent-purple);">Scale</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline-bar mt-2 fragment">
+    <div class="tl-segment" style="border-color:var(--accent-blue);">
+      <div class="tl-month" style="color:var(--accent-blue);">M1–M6</div>
+      <div class="tl-task">Build & validate<br/>all 5 layers</div>
+    </div>
+    <div class="tl-segment" style="border-color:var(--accent-cyan);">
+      <div class="tl-month" style="color:var(--accent-cyan);">M7–M9</div>
+      <div class="tl-task">Partner with<br/>1 rehab clinic</div>
+    </div>
+    <div class="tl-segment" style="border-color:var(--accent-green);">
+      <div class="tl-month" style="color:var(--accent-green);">M10–M12</div>
+      <div class="tl-task">Clinical pilot<br/>10 patients</div>
+    </div>
+    <div class="tl-segment" style="border-color:var(--accent-purple);">
+      <div class="tl-month" style="color:var(--accent-purple);">M13–M18</div>
+      <div class="tl-task">Seed round<br/>& scale</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 10 — AI USAGE STATEMENT (MANDATORY)
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag" style="background:rgba(139,92,246,0.1);color:var(--accent-purple);border-color:rgba(139,92,246,0.2);">
+    Mandatory Disclosure
+  </div>
+  <h2>AI Usage <span style="color:var(--accent-purple);">Statement</span></h2>
+
+  <p style="font-size:0.85rem;color:var(--text-primary);max-width:750px;margin-bottom:20px;">
+    In compliance with academic integrity standards, we declare the following uses of
+    AI tools during this project:
+  </p>
+
+  <div class="grid-2">
+    <div class="glass-card" style="padding:22px;">
+      <h3 style="font-size:0.9rem;"><i class="ph-bold ph-robot" style="color:var(--accent-purple);margin-right:6px;"></i>AI Tools Used</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
+        <span class="ai-pill"><i class="ph-bold ph-chat-dots"></i> GitHub Copilot (Claude)</span>
+        <span class="ai-pill"><i class="ph-bold ph-code"></i> Code Generation</span>
+        <span class="ai-pill"><i class="ph-bold ph-file-text"></i> Document Drafting</span>
+        <span class="ai-pill"><i class="ph-bold ph-palette"></i> Presentation Design</span>
+        <span class="ai-pill"><i class="ph-bold ph-users-three"></i> Agent System Design</span>
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding:22px;">
+      <h3 style="font-size:0.9rem;"><i class="ph-bold ph-brain" style="color:var(--accent-cyan);margin-right:6px;"></i>AI Contribution Scope</h3>
+      <table>
+        <thead><tr><th>Activity</th><th>AI Role</th></tr></thead>
+        <tbody>
+          <tr><td>Product ideation</td><td>Brainstorming & evaluation of alternatives</td></tr>
+          <tr><td>Architecture design</td><td>5-layer stack co-design with engineer agent</td></tr>
+          <tr><td>Literature synthesis</td><td>Connecting research papers to design decisions</td></tr>
+          <tr><td>Code scaffolding</td><td>Proposal HTML, presentations, agent profiles</td></tr>
+          <tr><td>Agent simulation</td><td>5 AI personas for multi-perspective review</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="glass-card mt-2 fragment" style="padding:18px;border-left:3px solid var(--accent-amber);">
+    <h3 style="font-size:0.85rem;color:var(--accent-amber);"><i class="ph-bold ph-warning" style="margin-right:6px;"></i>Human Responsibility</h3>
+    <p style="font-size:0.76rem;">
+      All <strong>architectural decisions, clinical constraints, data strategy, evaluation design, and project direction</strong>
+      were determined by the human team. AI was used as a force multiplier — not a decision maker.
+      Every AI output was reviewed, validated, and modified by the team before inclusion.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE 11 — REFERENCES
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag">References</div>
+  <h2>Key <span class="text-gradient">Literature</span></h2>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="font-size:0.82rem;margin-bottom:12px;">📚 Core References</h3>
+      <ol class="ref-list">
+        <li data-num="[1]">
+          <strong>Wu et al. (2024)</strong> — "Digital Twin for Amputees: A Bidirectional Interaction
+          Modeling and Prototype with CNN." Validates bidirectional EMG–kinematics digital twin
+          architecture for amputee rehabilitation.
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Supports L4 Digital Twin design
+          </em>
+        </li>
+        <li data-num="[2]">
+          <strong>Chowdhury et al. (2026)</strong> — "A Multimodal Intelligent System for Human
+          Digital Twin Simulation with Continuous Learning."
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Validates EWC continual learning approach for L3
+          </em>
+        </li>
+        <li data-num="[3]">
+          <strong>Robotic Foundation Model (2025)</strong> — Foundation models for robotic perception
+          and control, establishing precedent for pre-trained biosignal encoders.
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Precedent for L3 Ninapro Foundation Model
+          </em>
+        </li>
+        <li data-num="[4]">
+          <strong>Bioengineering (2024)</strong> — Rehabilitation bioengineering approaches for
+          upper-limb prosthetic control and motor recovery.
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Supports three-layer evaluation framework
+          </em>
+        </li>
+      </ol>
+    </div>
+    <div>
+      <h3 style="font-size:0.82rem;margin-bottom:12px;">🗂️ Data & Methodology</h3>
+      <ol class="ref-list" start="5">
+        <li data-num="[5]">
+          <strong>"Advanced Research Directions for AI-Powered Smart Prosthetics" (2025)</strong>
+          — Comprehensive AI prosthetics roadmap covering RL, digital twins, and adaptive control.
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Positions RehabPath within the field's direction
+          </em>
+        </li>
+        <li data-num="[6]">
+          <strong>Atzori et al. (2014, 2016)</strong> — Ninapro database: benchmark for sEMG
+          hand movement recognition. DB1–DB10 providing 180+ subjects and 49 movement classes.
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Primary data source for all system layers
+          </em>
+        </li>
+        <li data-num="[7]">
+          <strong>Scheme & Englehart (2014)</strong> — Demonstrated 15–30% cross-session accuracy
+          degradation in sEMG classifiers without re-calibration.
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Motivates the overnight co-adaptation loop
+          </em>
+        </li>
+        <li data-num="[8]">
+          <strong>Lilja & Öberg (1997)</strong> — Residual limb volume fluctuation model used in L1
+          socket simulation.
+          <em style="color:var(--accent-blue);font-style:normal;font-size:0.6rem;display:block;margin-top:2px;">
+            → Volume change model: ΔV(t) = V₀ · α · e^{-βt}
+          </em>
+        </li>
+      </ol>
+
+      <div style="margin-top:14px;padding:12px 16px;background:rgba(59,130,246,0.06);border-radius:10px;border:1px solid rgba(59,130,246,0.12);">
+        <p class="tiny" style="margin:0;">
+          <i class="ph-bold ph-folder-open" style="color:var(--accent-blue);margin-right:4px;"></i>
+          Full papers available in <strong>resources/research/</strong><br/>
+          <i class="ph-bold ph-book-open-text" style="color:var(--accent-blue);margin-right:4px;"></i>
+          Detailed equations and architecture in <strong>proposal.html</strong>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE — THIS SEMESTER'S FOCUS
+     ════════════════════════════════════════════════════════ -->
+<section data-transition="slide">
+  <div class="section-tag" style="background:rgba(139,92,246,0.1);color:var(--accent-purple);border-color:rgba(139,92,246,0.2);">Semester Scope</div>
+  <h2>This Semester: The <span class="text-gradient">Neuro Digital Twin</span></h2>
+
+  <p style="font-size:0.9rem;color:var(--text-primary);max-width:850px;margin:0 auto 26px;line-height:1.7;">
+    We focus on the <span class="highlight">EMG-driven neural twin</span> — the core that decodes
+    muscle intent, personalises control, and continuously learns — leaving shape-based simulation
+    for a future phase.
+  </p>
+
+  <div class="grid-2" style="margin-bottom:24px;">
+    <!-- IN SCOPE -->
+    <div class="glass-card fragment" style="padding:22px;border-left:3px solid var(--accent-green);">
+      <h3 style="color:var(--accent-green);font-size:0.95rem;margin-bottom:14px;"><i class="ph-bold ph-crosshair" style="margin-right:6px;"></i>In Scope — Semester 1</h3>
+      <div class="pain-item" style="margin-bottom:10px;">
+        <div class="pain-icon" style="background:rgba(16,185,129,0.15);color:var(--accent-green);"><i class="ph-bold ph-check-circle"></i></div>
+        <div class="pain-text"><strong>EMG Foundation Model</strong><span>Pre-train on 180+ Ninapro subjects for robust decoding</span></div>
+      </div>
+      <div class="pain-item" style="margin-bottom:10px;">
+        <div class="pain-icon" style="background:rgba(16,185,129,0.15);color:var(--accent-green);"><i class="ph-bold ph-check-circle"></i></div>
+        <div class="pain-text"><strong>Personalised Fine-tuning</strong><span>Few-shot adaptation to individual patient EMG patterns</span></div>
+      </div>
+      <div class="pain-item" style="margin-bottom:10px;">
+        <div class="pain-icon" style="background:rgba(16,185,129,0.15);color:var(--accent-green);"><i class="ph-bold ph-check-circle"></i></div>
+        <div class="pain-text"><strong>Continual Learning Loop</strong><span>EWC-based co-adaptation across sessions — no forgetting</span></div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-icon" style="background:rgba(16,185,129,0.15);color:var(--accent-green);"><i class="ph-bold ph-check-circle"></i></div>
+        <div class="pain-text"><strong>Virtual Training Environment</strong><span>Digital twin hand for daily practice driven by decoded EMG</span></div>
+      </div>
+    </div>
+
+    <!-- FUTURE -->
+    <div class="glass-card fragment" style="padding:22px;border-left:3px solid var(--text-dim);opacity:0.65;">
+      <h3 style="color:var(--text-dim);font-size:0.95rem;margin-bottom:14px;"><i class="ph-bold ph-clock" style="margin-right:6px;"></i>Future Phase</h3>
+      <div class="pain-item" style="margin-bottom:10px;">
+        <div class="pain-icon" style="background:rgba(100,116,139,0.15);color:var(--text-dim);"><i class="ph-bold ph-hourglass"></i></div>
+        <div class="pain-text"><strong>3D Limb Photogrammetry</strong><span>Smartphone scanning &amp; mesh reconstruction</span></div>
+      </div>
+      <div class="pain-item" style="margin-bottom:10px;">
+        <div class="pain-icon" style="background:rgba(100,116,139,0.15);color:var(--text-dim);"><i class="ph-bold ph-hourglass"></i></div>
+        <div class="pain-text"><strong>Socket Pressure Simulation</strong><span>MuJoCo contact compliance &amp; fit validation</span></div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-icon" style="background:rgba(100,116,139,0.15);color:var(--text-dim);"><i class="ph-bold ph-hourglass"></i></div>
+        <div class="pain-text"><strong>RL Therapist Curriculum</strong><span>Adaptive exercise scheduling &amp; difficulty tuning</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card fragment" style="padding:14px 20px;border-left:3px solid var(--accent-purple);text-align:center;">
+    <p style="font-size:0.82rem;color:var(--text-primary);margin:0;">
+      <i class="ph-bold ph-brain" style="color:var(--accent-purple);margin-right:6px;"></i>
+      <strong>Goal:</strong> A personalised neural decoder that gets better every session —
+      giving the patient <span class="highlight">superior, adaptive prosthetic control</span>.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════
+     SLIDE — THANK YOU / TEAM & COLLABORATORS
+     ════════════════════════════════════════════════════════ -->
+<section class="title-slide" data-transition="zoom">
+  <div style="text-align:center;">
+    <h1 style="font-size:2.6rem;">Thank You</h1>
+    <p class="subtitle" style="max-width:600px;margin:0 auto 24px;font-size:0.95rem;">
+      RehabPath — Making prosthetic rehabilitation<br/>
+      <span class="highlight">personal, adaptive, and continuous</span>
+    </p>
+
+    <!-- Team Members -->
+    <h3 style="font-size:0.85rem;color:var(--accent-cyan);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.1em;"><i class="ph-bold ph-users-three" style="margin-right:6px;"></i>The Team</h3>
+    <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
+      <div class="stat-card" style="padding:14px 20px;min-width:120px;">
+        <div style="font-size:1.3rem;margin-bottom:4px;">👤</div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);">Ahmed</div>
+      </div>
+      <div class="stat-card" style="padding:14px 20px;min-width:120px;">
+        <div style="font-size:1.3rem;margin-bottom:4px;">👤</div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);">Mostafa</div>
+      </div>
+      <div class="stat-card" style="padding:14px 20px;min-width:120px;">
+        <div style="font-size:1.3rem;margin-bottom:4px;">👤</div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);">Mohamed</div>
+      </div>
+      <div class="stat-card" style="padding:14px 20px;min-width:120px;">
+        <div style="font-size:1.3rem;margin-bottom:4px;">👤</div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);">Ibrahim</div>
+      </div>
+      <div class="stat-card" style="padding:14px 20px;min-width:120px;">
+        <div style="font-size:1.3rem;margin-bottom:4px;">👤</div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-primary);">Abdelrahman</div>
+      </div>
+    </div>
+
+    <!-- AI Agent Collaborators -->
+    <h3 style="font-size:0.85rem;color:var(--accent-purple);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.1em;"><i class="ph-bold ph-robot" style="margin-right:6px;"></i>AI Agent Collaborators</h3>
+    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+      <span class="layer-badge" style="background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.25);">
+        <i class="ph-bold ph-user"></i> Khaled — Patient Persona
+      </span>
+      <span class="layer-badge" style="background:rgba(59,130,246,0.12);color:var(--accent-blue);border:1px solid rgba(59,130,246,0.25);">
+        <i class="ph-bold ph-code"></i> Omar — ML Engineer
+      </span>
+      <span class="layer-badge" style="background:rgba(34,211,238,0.12);color:var(--accent-cyan);border:1px solid rgba(34,211,238,0.25);">
+        <i class="ph-bold ph-microscope"></i> Sara — Researcher
+      </span>
+      <span class="layer-badge" style="background:rgba(236,72,153,0.12);color:var(--accent-pink);border:1px solid rgba(236,72,153,0.25);">
+        <i class="ph-bold ph-chart-pie-slice"></i> Hana — Product Manager
+      </span>
+      <span class="layer-badge" style="background:rgba(16,185,129,0.12);color:var(--accent-green);border:1px solid rgba(16,185,129,0.25);">
+        <i class="ph-bold ph-stethoscope"></i> Dr. Rania — Clinical Expert
+      </span>
+    </div>
+
+    <!-- EMG wave -->
+    <div class="emg-wave" style="margin:18px auto;">
+      <div class="emg-bar" style="animation-delay:0.0s;"></div>
+      <div class="emg-bar" style="animation-delay:0.08s;"></div>
+      <div class="emg-bar" style="animation-delay:0.16s;"></div>
+      <div class="emg-bar" style="animation-delay:0.24s;"></div>
+      <div class="emg-bar" style="animation-delay:0.32s;"></div>
+      <div class="emg-bar" style="animation-delay:0.40s;"></div>
+      <div class="emg-bar" style="animation-delay:0.48s;"></div>
+      <div class="emg-bar" style="animation-delay:0.56s;"></div>
+      <div class="emg-bar" style="animation-delay:0.64s;"></div>
+      <div class="emg-bar" style="animation-delay:0.72s;"></div>
+      <div class="emg-bar" style="animation-delay:0.80s;"></div>
+      <div class="emg-bar" style="animation-delay:0.88s;"></div>
+      <div class="emg-bar" style="animation-delay:0.80s;"></div>
+      <div class="emg-bar" style="animation-delay:0.72s;"></div>
+      <div class="emg-bar" style="animation-delay:0.64s;"></div>
+      <div class="emg-bar" style="animation-delay:0.56s;"></div>
+      <div class="emg-bar" style="animation-delay:0.48s;"></div>
+      <div class="emg-bar" style="animation-delay:0.40s;"></div>
+      <div class="emg-bar" style="animation-delay:0.32s;"></div>
+      <div class="emg-bar" style="animation-delay:0.24s;"></div>
+      <div class="emg-bar" style="animation-delay:0.16s;"></div>
+      <div class="emg-bar" style="animation-delay:0.08s;"></div>
+      <div class="emg-bar" style="animation-delay:0.0s;"></div>
+    </div>
+
+    <p class="meta" style="margin-top:16px;text-align:center;">
+      SBME 4th Year · Rehabilitation Engineering Project · 2025–2026
+    </p>
+  </div>
+</section>
+
+</div><!-- /slides -->
+</div><!-- /reveal -->
+
+<!-- ═══ SCRIPTS ═══ -->
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+<script>
+// ═══════════════════════════════════════════
+// ENHANCED NEURAL PARTICLE BACKGROUND
+// with EMG waveform overlay, neuron nodes & synapse firing
+// ═══════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let neurons = [];
+  const PARTICLE_COUNT = 90;
+  const NEURON_COUNT = 7;
+  const CONNECTION_DIST = 160;
+  let mouse = { x: -1000, y: -1000 };
+  let time = 0;
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.radius = Math.random() * 2 + 0.5;
+      this.hue = 200 + Math.random() * 40;
+      this.alpha = Math.random() * 0.5 + 0.2;
+      this.pulse = Math.random() * Math.PI * 2;
+    }
+
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.pulse += 0.02;
+
+      if (this.x < 0) this.x = canvas.width;
+      if (this.x > canvas.width) this.x = 0;
+      if (this.y < 0) this.y = canvas.height;
+      if (this.y > canvas.height) this.y = 0;
+
+      const dx = this.x - mouse.x;
+      const dy = this.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        this.vx += dx / dist * 0.02;
+        this.vy += dy / dist * 0.02;
+      }
+      this.vx *= 0.999;
+      this.vy *= 0.999;
+    }
+
+    draw() {
+      const a = this.alpha * (0.6 + 0.4 * Math.sin(this.pulse));
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${this.hue}, 80%, 65%, ${a})`;
+      ctx.fill();
+    }
+  }
+
+  // Larger neuron nodes that pulse and fire
+  class Neuron {
+    constructor() {
+      this.x = 80 + Math.random() * (canvas.width - 160);
+      this.y = 80 + Math.random() * (canvas.height - 160);
+      this.vx = (Math.random() - 0.5) * 0.12;
+      this.vy = (Math.random() - 0.5) * 0.12;
+      this.radius = 4 + Math.random() * 3;
+      this.pulse = Math.random() * Math.PI * 2;
+      this.fireTimer = Math.random() * 300;
+      this.firing = false;
+      this.fireAlpha = 0;
+    }
+
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.pulse += 0.015;
+      this.fireTimer--;
+
+      if (this.fireTimer <= 0) {
+        this.firing = true;
+        this.fireAlpha = 1;
+        this.fireTimer = 200 + Math.random() * 500;
+      }
+      if (this.firing) {
+        this.fireAlpha *= 0.96;
+        if (this.fireAlpha < 0.01) this.firing = false;
+      }
+
+      // Soft boundary bounce
+      if (this.x < 60) this.vx += 0.004;
+      if (this.x > canvas.width - 60) this.vx -= 0.004;
+      if (this.y < 60) this.vy += 0.004;
+      if (this.y > canvas.height - 60) this.vy -= 0.004;
+      this.vx *= 0.998;
+      this.vy *= 0.998;
+    }
+
+    draw() {
+      const a = 0.3 + 0.2 * Math.sin(this.pulse);
+
+      // Fire glow rings
+      if (this.firing) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius + 18, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(34, 211, 238, ${this.fireAlpha * 0.1})`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius + 9, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(34, 211, 238, ${this.fireAlpha * 0.22})`;
+        ctx.fill();
+      }
+
+      // Core
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(139, 92, 246, ${a})`;
+      ctx.fill();
+
+      // Inner highlight
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius * 0.45, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${a * 0.4})`;
+      ctx.fill();
+    }
+  }
+
+  function init() {
+    resize();
+    particles = [];
+    neurons = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+    for (let i = 0; i < NEURON_COUNT; i++) neurons.push(new Neuron());
+  }
+
+  function drawConnections() {
+    const all = [...particles, ...neurons];
+    for (let i = 0; i < all.length; i++) {
+      for (let j = i + 1; j < all.length; j++) {
+        const dx = all[i].x - all[j].x;
+        const dy = all[i].y - all[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONNECTION_DIST) {
+          let alpha = (1 - dist / CONNECTION_DIST) * 0.12;
+          const iN = all[i] instanceof Neuron;
+          const jN = all[j] instanceof Neuron;
+          const isFiring = (iN && all[i].firing) || (jN && all[j].firing);
+          if (isFiring) alpha = Math.min(alpha * 3.5, 0.45);
+
+          ctx.beginPath();
+          ctx.moveTo(all[i].x, all[i].y);
+          ctx.lineTo(all[j].x, all[j].y);
+          const rgb = isFiring ? '34, 211, 238' : '59, 130, 246';
+          ctx.strokeStyle = `rgba(${rgb}, ${alpha})`;
+          ctx.lineWidth = isFiring ? 1.2 : 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Scrolling EMG waveform at bottom edge
+  function drawEMGWave() {
+    const y0 = canvas.height - 38;
+    const amp = 16;
+    const freq = 0.014;
+    const spd = time * 1.8;
+
+    ctx.beginPath();
+    ctx.moveTo(0, y0);
+    for (let x = 0; x < canvas.width; x += 2) {
+      const n = Math.sin(x * freq + spd) * 0.5
+              + Math.sin(x * freq * 2.3 + spd * 1.5) * 0.3
+              + Math.sin(x * freq * 5.7 + spd * 0.8) * 0.2;
+      ctx.lineTo(x, y0 + n * amp);
+    }
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.055)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Second channel (offset)
+    ctx.beginPath();
+    ctx.moveTo(0, y0 - 22);
+    for (let x = 0; x < canvas.width; x += 2) {
+      const n = Math.sin(x * freq * 1.1 + spd + 2) * 0.4
+              + Math.sin(x * freq * 3.1 + spd * 1.2 + 1) * 0.35
+              + Math.sin(x * freq * 7 + spd * 0.5) * 0.25;
+      ctx.lineTo(x, y0 - 22 + n * amp * 0.7);
+    }
+    ctx.strokeStyle = 'rgba(139, 92, 246, 0.035)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function animate() {
+    time += 0.01;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Subtle radial gradient
+    const grad = ctx.createRadialGradient(
+      canvas.width * 0.3, canvas.height * 0.5, 0,
+      canvas.width * 0.3, canvas.height * 0.5, canvas.width * 0.8
+    );
+    grad.addColorStop(0, 'rgba(10, 22, 40, 0.01)');
+    grad.addColorStop(1, 'rgba(5, 10, 24, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawEMGWave();
+    drawConnections();
+    for (const n of neurons) { n.update(); n.draw(); }
+    for (const p of particles) { p.update(); p.draw(); }
+    requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+  init();
+  animate();
+})();
+
+// ═══════════════════════════════════════════
+// REVEAL.JS INIT
+// ═══════════════════════════════════════════
+Reveal.initialize({
+  hash: true,
+  slideNumber: 'c/t',
+  width: 1280,
+  height: 720,
+  margin: 0.04,
+  center: false,
+  transition: 'slide',
+  transitionSpeed: 'default',
+  backgroundTransition: 'fade',
+  controlsTutorial: true,
+  controlsLayout: 'bottom-right',
+  progress: true,
+  history: true,
+  fragments: true,
+  fragmentInURL: false,
+  embedded: false,
+  help: true,
+  showNotes: false,
+  autoPlayMedia: null,
+  preloadIframes: null,
+  autoAnimate: true,
+  autoAnimateEasing: 'ease',
+  autoAnimateDuration: 1.0,
+  autoAnimateUnmatched: false,
+  view: null,
+}).then(() => {
+  // Render KaTeX
+  renderMathInElement(document.body, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false }
+    ],
+    throwOnError: false
+  });
+});
+</script>
+
+</body>
+</html>
