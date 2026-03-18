@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DD Presentation - Digital Twin Focus</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" />
+
+  <style>
+    :root {
+      --bg: #070b16;
+      --card: rgba(20, 30, 48, 0.75);
+      --border: #294061;
+      --text: #e5edf8;
+      --muted: #9db2cc;
+      --blue: #60a5fa;
+      --cyan: #22d3ee;
+      --green: #34d399;
+      --amber: #fbbf24;
+    }
+
+    .reveal {
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      color: var(--text);
+    }
+
+    .reveal .slides { text-align: left; }
+
+    .reveal h1, .reveal h2, .reveal h3 {
+      text-transform: none;
+      letter-spacing: -0.02em;
+    }
+
+    .reveal h1 { font-size: 2.5rem; }
+    .reveal h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .reveal h3 { font-size: 1.1rem; color: var(--cyan); }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 0.4rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-top: 14px;
+    }
+
+    .small {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    .pill-blue { color: var(--blue); border-color: rgba(96,165,250,0.35); }
+    .pill-green { color: var(--green); border-color: rgba(52,211,153,0.35); }
+    .pill-amber { color: var(--amber); border-color: rgba(251,191,36,0.35); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px;
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(33, 53, 82, 0.8);
+      color: var(--blue);
+      text-align: left;
+    }
+
+    .flow {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: var(--text);
+      background: rgba(10, 16, 28, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+
+    .goal-box {
+      border-left: 3px solid var(--green);
+      background: rgba(52,211,153,0.1);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .reveal ul { margin-top: 8px; }
+    .reveal li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+      <section>
+        <h1>Digital Digit (DD)</h1>
+        <h2 style="color: var(--blue);">Focused Presentation</h2>
+        <p class="subtitle">Only the essentials: Digital Twin definition, related works, and DD mechanism to achieve goals.</p>
+        <div class="card">
+          <span class="chip pill-blue">Digital Twin</span>
+          <span class="chip pill-green">Control Enhancement</span>
+          <span class="chip pill-amber">Interface Physics</span>
+          <p class="small">Project context aligned with your review summary and presentation architecture (L0-L5).</p>
+        </div>
+      </section>
+
+      <section>
+        <h2>1) Definition of Digital Twin (DD Context)</h2>
+        <div class="card">
+          <p>
+            A <strong>digital twin</strong> is a dynamic digital representation of a physical system,
+            continuously synchronized with real data and used for simulation, prediction, optimization,
+            and decision support.
+          </p>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Physical twin in DD</h3>
+            <ul>
+              <li>Residual limb and EMG signal behavior</li>
+              <li>Intended prosthetic movement and task goals</li>
+              <li>Socket-residual interface biomechanics (pressure/fit)</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Digital twin in DD</h3>
+            <ul>
+              <li>Signal state: EMG windows and temporal patterns</li>
+              <li>Control state: intent decoding, confidence, adaptation</li>
+              <li>Physics state: virtual hand-object interaction, interface pressure</li>
+              <li>Outcome state: latency, success, consistency, comfort indicators</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="goal-box">
+          DD digital twin is dual-purpose: <strong>control enhancement</strong> + <strong>interface comfort/safety</strong>.
+        </div>
+      </section>
+
+      <section>
+        <h2>2) Related Works Summary</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Main contribution</th>
+              <th>Value for DD</th>
+              <th>Limitation vs DD target</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Wu et al. (2024)</td>
+              <td>EMG + CNN + bidirectional digital twin pilot</td>
+              <td>Supports EMG-to-intent loop feasibility</td>
+              <td>Small pilot, binary task, limited generalization</td>
+            </tr>
+            <tr>
+              <td>Cellupica et al. (2024)</td>
+              <td>VR training with interactive prosthesis twin</td>
+              <td>Strong training and usability framework</td>
+              <td>Less focus on deep patient-specific decoding robustness</td>
+            </tr>
+            <tr>
+              <td>Zhou et al. (2026)</td>
+              <td>4-stage AI digital twin lifecycle</td>
+              <td>Architecture roadmap for DD maturity</td>
+              <td>Survey-level, not prosthetic control implementation</td>
+            </tr>
+            <tr>
+              <td>Patiniott et al. (2025)</td>
+              <td>Ontology-driven adaptive aftercare ecosystem</td>
+              <td>Clinical workflow and long-term adaptation model</td>
+              <td>Not centered on low-latency EMG control benchmarking</td>
+            </tr>
+            <tr>
+              <td>Yao (interface DT)</td>
+              <td>Socket pressure simulation + comfort prediction</td>
+              <td>Direct model for fit/comfort optimization</td>
+              <td>Limited control decoding and task-level control metrics</td>
+            </tr>
+            <tr>
+              <td>Pizzolato et al. (2019)</td>
+              <td>Neuromusculoskeletal personalized modeling review</td>
+              <td>Supports personalized physiological control models</td>
+              <td>Broad neurorehab scope, not DD end-to-end pipeline</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="goal-box">
+          Gap identified: few systems unify <strong>control intelligence</strong> and <strong>interface physics</strong> in one patient-specific twin.
+        </div>
+      </section>
+
+      <section>
+        <h2>3) DD Mechanism: How the Twin Achieves Its Goals</h2>
+        <div class="flow">L0 Photogrammetry -> residual limb geometry
+L1 Interface simulation -> pressure hotspot prediction
+L2 Contralateral bootstrap -> auto-labeled EMG calibration
+L3 Biological twin -> EMG decoding to intended kinematics
+L4 Digital twin hand -> physics-based execution + grasp validation
+L5 RL therapist/co-adaptation -> session planning + overnight control updates</div>
+
+        <div class="grid-3">
+          <div class="card">
+            <h3>Goal A: Enhance Control</h3>
+            <ul>
+              <li>Higher decode reliability</li>
+              <li>Lower latency and confusion</li>
+              <li>Better task success and consistency</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Goal B: Improve Fit/Safety</h3>
+            <ul>
+              <li>Predict pressure hotspots before fabrication</li>
+              <li>Reduce pain-driven EMG degradation</li>
+              <li>Support comfort-aware prescriptions</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Goal C: Adaptive Rehab</h3>
+            <ul>
+              <li>Personalized session progression</li>
+              <li>Drift/fatigue-aware updates</li>
+              <li>Clinician decision support</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Take-Home Message</h2>
+        <div class="card">
+          <p>
+            DD uses a <strong>single integrated digital twin pipeline</strong> to connect measurement,
+            interface physics, EMG intelligence, virtual prosthetic physics, and adaptive training.
+            This is how DD turns digital twin technology into a practical engine for
+            <strong>prosthetic control enhancement</strong> and <strong>better rehabilitation outcomes</strong>.
+          </p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      slideNumber: true,
+      transition: 'fade',
+      backgroundTransition: 'fade'
+    });
+  </script>
+</body>
+</html>
