@@ -71,3 +71,8 @@ resources/research/Certificate*
 
 # ─── Logs ────────────────────────────────────────────────────────────────────
 *.log
+uv.lock
+simulation-frontend/MJDATA.TXT
+README.md
+pyproject.toml
+.python-version
