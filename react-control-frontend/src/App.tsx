@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { GestureStreamPanel } from "./components/GestureStreamPanel";
 import { SignalSenderCard } from "./components/SignalSenderCard";
+import { ScenariosSection } from "./components/ScenariosSection";
 import type { UnifiedInferenceResult } from "./types/api";
 
 function App() {
@@ -36,10 +37,13 @@ function App() {
           </section>
         )}
 
-        <section className="main-grid">
+<section className="main-grid">
           <SignalSenderCard onInferenceComplete={setLastInference} />
           <GestureStreamPanel />
         </section>
+
+        <ScenariosSection /> {/* <-- Add this line here */}
+
       </main>
     </div>
   );

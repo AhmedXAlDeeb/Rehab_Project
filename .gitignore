@@ -18,6 +18,8 @@ env/
 venv/
 ENV/
 
+node_modules 
+
 # ─── Jupyter ─────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
 *.ipynb

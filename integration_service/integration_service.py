@@ -1,5 +1,6 @@
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware # <-- ADDED for CORS
 from pydantic import BaseModel, Field
 from typing import Any, List
 import httpx
@@ -9,8 +10,19 @@ import uvicorn
 import numpy as np
 import torch
 import torch.nn as nn
+import asyncio # <-- ADDED for real-time sleep simulation
 
 app = FastAPI(title="Gesture Integration Service", description="Bridges the AI service and WebSocket server.")
+
+# --- ADD CORS MIDDLEWARE ---
+# This allows your React frontend to communicate with this FastAPI backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins (adjust for production)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods including OPTIONS, POST, GET
+    allow_headers=["*"],  # Allows all headers
+)
 
 # URLs for your existing services
 AI_SERVICE_URL = "http://localhost:8000/predict"
@@ -203,6 +215,86 @@ async def process_and_forward(data: SignalInput):
         }
     }
 
+
+# --- 5. NEW: SCENARIO PLAYBACK ENDPOINT ---
+@app.post("/scenario/{scenario_id}")
+async def run_scenario(scenario_id: int):
+    """
+    Reads a stacked EMG file for a given scenario, chunks it into 400-timestep movements,
+    sends each to the AI service, and broadcasts the result via WebSocket.
+    
+    Expected file format: Numpy array (.npy) of shape (12 channels, N * 400 timesteps)
+    Location: A 'data' directory in the same folder as this script, e.g., 'data/scenario_1.npy'.
+    """
+    file_path = Path(f"data/scenario_{scenario_id}.npy")
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail=f"Scenario file not found at {file_path}")
+
+    try:
+        # Load data. Expected shape: (12, total_timesteps)
+        data = np.load(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load numpy file: {str(e)}")
+
+    if len(data.shape) != 2 or data.shape[0] != N_CHANNELS:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid data shape {data.shape}. Expected ({N_CHANNELS}, N*400)"
+        )
+
+    total_timesteps = data.shape[1]
+    chunk_size = N_TIMESTEPS
+    results = []
+
+    # Iterate through the stacked array in chunks of 400 timesteps
+    for i in range(0, total_timesteps, chunk_size):
+        chunk = data[:, i:i+chunk_size]
+        
+        # Skip trailing incomplete chunks
+        if chunk.shape[1] < chunk_size:
+            break 
+            
+        signal_list = chunk.tolist()
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                ai_payload = {"signal": signal_list}
+                response = await client.post(AI_SERVICE_URL, json=ai_payload, timeout=10.0)
+                
+                if response.status_code == 200:
+                    ai_result = response.json()
+                    predicted_class_id = ai_result.get("predicted_class")
+                    
+                    if predicted_class_id is not None:
+                        gesture_name = ID_TO_GESTURE.get(predicted_class_id, "unknown_gesture")
+                        ws_status = await send_to_websocket(gesture_name)
+                        
+                        results.append({
+                            "chunk_index": i // chunk_size,
+                            "predicted_id": predicted_class_id,
+                            "gesture": gesture_name,
+                            "ws_status": ws_status
+                        })
+                    else:
+                        results.append({"chunk_index": i // chunk_size, "error": "AI returned no class ID"})
+                else:
+                    results.append({"chunk_index": i // chunk_size, "error": f"AI service HTTP {response.status_code}"})
+                    
+        except Exception as e:
+            results.append({"chunk_index": i // chunk_size, "error": str(e)})
+
+        # Wait 1 second before processing the next movement to simulate real-time playback
+        await asyncio.sleep(1.0) 
+
+    return {
+        "status": "success",
+        "scenario_id": scenario_id,
+        "movements_processed": len(results),
+        "results": results
+    }
+
+# --- OTHER ENDPOINTS ---
 
 @app.get("/vae/health")
 async def vae_health() -> dict[str, Any]:
