@@ -1,16 +1,26 @@
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from typing import List
+from typing import Any, List
 import httpx
 import websockets
 import json
 import uvicorn
+import numpy as np
+import torch
+import torch.nn as nn
 
 app = FastAPI(title="Gesture Integration Service", description="Bridges the AI service and WebSocket server.")
 
 # URLs for your existing services
 AI_SERVICE_URL = "http://localhost:8000/predict"
+CLASSIFIER_FINETUNE_URL = "http://localhost:8000/finetune_on_synthetic"
 WS_SERVER_URL = "ws://localhost:8765"
+DEFAULT_VAE_CHECKPOINT = Path("test/cvae_db2_best.pt")
+VAE_LATENT_DIM = 64
+VAE_CONDITION_DIM = 16
+N_CHANNELS = 12
+N_TIMESTEPS = 400
 
 # --- 1. Define Label Mapping (ID to String) ---
 ID_TO_GESTURE = {
@@ -37,6 +47,97 @@ ID_TO_GESTURE = {
 # --- 2. Input Schema ---
 class SignalInput(BaseModel):
     signal: List[List[float]] = Field(..., description="A 2D array representing EMG data [12 channels, 400 timesteps]")
+
+
+class GenerationFlags(BaseModel):
+    fatigue: float = Field(default=0.0, ge=0.0, le=1.0)
+    electrode_quality: float = Field(default=1.0, ge=0.0, le=1.0)
+    session_idx_norm: float = Field(default=0.0, ge=0.0, le=1.0)
+    amputation: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class VAEGenerateRequest(BaseModel):
+    subject_idx_0based: int = Field(default=0, ge=0)
+    gesture_0based: int = Field(default=0, ge=0, le=52)
+    flags: GenerationFlags = Field(default_factory=GenerationFlags)
+    n_samples: int = Field(default=10, ge=1, le=500)
+    seed: int | None = None
+
+
+class VAEGenerateAndFineTuneRequest(VAEGenerateRequest):
+    finetune_epochs: int = Field(default=3, ge=1, le=50)
+    finetune_batch_size: int = Field(default=32, ge=1, le=256)
+    finetune_learning_rate: float = Field(default=1e-4, gt=0.0, le=1.0)
+    checkpoint_out: str | None = None
+
+
+class NotebookStyleConditionalVAE(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.latent_dim = VAE_LATENT_DIM
+        self.decoder = nn.Sequential(
+            nn.Linear(self.latent_dim + VAE_CONDITION_DIM, 512),
+            nn.ReLU(),
+            nn.Linear(512, N_CHANNELS * N_TIMESTEPS),
+        )
+
+    def decode(self, z: torch.Tensor, cond: torch.Tensor) -> torch.Tensor:
+        out = self.decoder(torch.cat([z, cond], dim=-1))
+        out = torch.tanh(out)
+        return out.view(z.shape[0], N_CHANNELS, N_TIMESTEPS)
+
+
+class VAEEngine:
+    def __init__(self, checkpoint_path: Path):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = NotebookStyleConditionalVAE().to(self.device)
+        self.checkpoint_path = checkpoint_path
+        self.loaded = False
+        self.load_error: str | None = None
+
+        if checkpoint_path.exists():
+            try:
+                state = torch.load(checkpoint_path, map_location=self.device)
+                if isinstance(state, dict) and "state_dict" in state:
+                    state = state["state_dict"]
+                if isinstance(state, dict):
+                    self.model.load_state_dict(state, strict=False)
+                    self.loaded = True
+            except Exception as exc:
+                self.load_error = str(exc)
+        self.model.eval()
+
+    @staticmethod
+    def _build_condition(subject_idx: int, gesture: int, flags: GenerationFlags) -> np.ndarray:
+        base = np.array(
+            [
+                float(subject_idx),
+                float(gesture),
+                float(flags.fatigue),
+                float(flags.electrode_quality),
+                float(flags.session_idx_norm),
+                float(flags.amputation),
+            ],
+            dtype=np.float32,
+        )
+        pad = np.zeros(VAE_CONDITION_DIM - base.shape[0], dtype=np.float32)
+        return np.concatenate([base, pad], axis=0)
+
+    def generate(self, body: VAEGenerateRequest) -> list[np.ndarray]:
+        if body.seed is not None:
+            torch.manual_seed(body.seed)
+            np.random.seed(body.seed)
+
+        cond = self._build_condition(body.subject_idx_0based, body.gesture_0based, body.flags)
+        cond_t = torch.tensor(cond, dtype=torch.float32, device=self.device).unsqueeze(0).repeat(body.n_samples, 1)
+        z = torch.randn(body.n_samples, self.model.latent_dim, device=self.device)
+
+        with torch.no_grad():
+            out = self.model.decode(z, cond_t).cpu().numpy()
+        return [out[i] for i in range(out.shape[0])]
+
+
+vae_engine = VAEEngine(DEFAULT_VAE_CHECKPOINT)
 
 # --- 3. WebSocket Sender ---
 async def send_to_websocket(gesture_name: str):
@@ -101,6 +202,78 @@ async def process_and_forward(data: SignalInput):
             "websocket_delivery": ws_status
         }
     }
+
+
+@app.get("/vae/health")
+async def vae_health() -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "checkpoint": str(vae_engine.checkpoint_path),
+        "checkpoint_exists": vae_engine.checkpoint_path.exists(),
+        "checkpoint_loaded": vae_engine.loaded,
+        "load_error": vae_engine.load_error,
+        "device": str(vae_engine.device),
+    }
+
+
+@app.post("/vae/generate")
+async def vae_generate(body: VAEGenerateRequest):
+    try:
+        generated = vae_engine.generate(body)
+        payload = [arr.astype(np.float32).tolist() for arr in generated]
+        return {
+            "status": "success",
+            "shape": [N_CHANNELS, N_TIMESTEPS],
+            "gesture_label": body.gesture_0based,
+            "n_samples": len(payload),
+            "samples": payload,
+            "model_loaded": vae_engine.loaded,
+            "model_load_error": vae_engine.load_error,
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/vae/generate_and_finetune")
+async def vae_generate_and_finetune(body: VAEGenerateAndFineTuneRequest):
+    try:
+        generated = vae_engine.generate(body)
+        finetune_samples = [{"signal": arr.astype(np.float32).tolist(), "label": body.gesture_0based} for arr in generated]
+        finetune_payload = {
+            "samples": finetune_samples,
+            "epochs": body.finetune_epochs,
+            "batch_size": body.finetune_batch_size,
+            "learning_rate": body.finetune_learning_rate,
+            "checkpoint_out": body.checkpoint_out,
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(CLASSIFIER_FINETUNE_URL, json=finetune_payload, timeout=120.0)
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Classifier fine-tune failed: {response.text}",
+            )
+
+        return {
+            "status": "success",
+            "generation": {
+                "n_samples": len(generated),
+                "shape": [N_CHANNELS, N_TIMESTEPS],
+                "gesture_label": body.gesture_0based,
+                "model_loaded": vae_engine.loaded,
+                "model_load_error": vae_engine.load_error,
+            },
+            "finetune": response.json(),
+        }
+    except httpx.RequestError:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not reach classifier fine-tune endpoint at {CLASSIFIER_FINETUNE_URL}. Is classification_service running?",
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 if __name__ == "__main__":
     # Run this integration service on port 8001 so it doesn't clash with your AI service

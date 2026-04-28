@@ -9,6 +9,10 @@ import type {
   PredictResponse,
   SignalMatrix,
   UnifiedInferenceResult,
+  VAEGenerateAndFineTuneRequest,
+  VAEGenerateAndFineTuneResponse,
+  VAEGenerateRequest,
+  VAEGenerateResponse,
 } from "../types/api";
 
 const forwardSignalResponseSchema = z.object({
@@ -23,6 +27,35 @@ const forwardSignalResponseSchema = z.object({
 const predictResponseSchema = z.object({
   predicted_class: z.number(),
   status: z.string(),
+});
+
+const vaeGenerateResponseSchema = z.object({
+  status: z.string(),
+  shape: z.tuple([z.number(), z.number()]),
+  gesture_label: z.number(),
+  n_samples: z.number(),
+  samples: z.array(z.array(z.array(z.number()))),
+  model_loaded: z.boolean(),
+  model_load_error: z.string().nullable().optional(),
+});
+
+const vaeGenerateAndFineTuneResponseSchema = z.object({
+  status: z.string(),
+  generation: z.object({
+    n_samples: z.number(),
+    shape: z.tuple([z.number(), z.number()]),
+    gesture_label: z.number(),
+    model_loaded: z.boolean(),
+    model_load_error: z.string().nullable().optional(),
+  }),
+  finetune: z.object({
+    status: z.string(),
+    samples_used: z.number(),
+    epochs: z.number(),
+    initial_loss: z.number().nullable(),
+    final_loss: z.number().nullable(),
+    checkpoint_saved_to: z.string(),
+  }),
 });
 
 export class InferenceApiError extends Error {
@@ -118,6 +151,29 @@ export async function sendSignalForInference(args: SendSignalArgs): Promise<Unif
       predictedClass: parsed.predicted_class,
       raw: parsed,
     };
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+}
+
+export async function generateSyntheticSamples(args: VAEGenerateRequest): Promise<VAEGenerateResponse> {
+  try {
+    const response = await integrationApiClient.post<VAEGenerateResponse>("/vae/generate", args);
+    return vaeGenerateResponseSchema.parse(response.data);
+  } catch (error) {
+    throw normalizeApiError(error);
+  }
+}
+
+export async function generateAndFineTuneClassifier(
+  args: VAEGenerateAndFineTuneRequest,
+): Promise<VAEGenerateAndFineTuneResponse> {
+  try {
+    const response = await integrationApiClient.post<VAEGenerateAndFineTuneResponse>(
+      "/vae/generate_and_finetune",
+      args,
+    );
+    return vaeGenerateAndFineTuneResponseSchema.parse(response.data);
   } catch (error) {
     throw normalizeApiError(error);
   }

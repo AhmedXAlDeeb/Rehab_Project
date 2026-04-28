@@ -76,3 +76,8 @@ simulation-frontend/MJDATA.TXT
 README.md
 pyproject.toml
 .python-version
+
+
+*.mp4
+*.pdf   
+*.tex
