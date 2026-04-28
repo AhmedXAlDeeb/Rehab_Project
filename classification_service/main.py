@@ -12,7 +12,7 @@ import uvicorn
 N_CHANNELS = 12
 N_TIMESTEPS = 400
 N_CLASSES = 53
-DEFAULT_CHECKPOINT_PATH = Path("emg_model_epoch_7.pt")
+DEFAULT_CHECKPOINT_PATH = Path(__file__).parent / "emg_model_epoch_7.pt"
 
 
 class EMGCNN(nn.Module):

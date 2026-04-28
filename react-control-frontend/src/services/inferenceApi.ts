@@ -1,7 +1,7 @@
 import { AxiosError } from "axios";
 import { z } from "zod";
 
-import { directApiClient, integrationApiClient } from "./httpClients";
+import { directApiClient, integrationApiClient, generationApiClient } from "./httpClients";
 import { hasValidSignalShape } from "../utils/signal";
 import type {
   ForwardSignalResponse,
@@ -158,7 +158,7 @@ export async function sendSignalForInference(args: SendSignalArgs): Promise<Unif
 
 export async function generateSyntheticSamples(args: VAEGenerateRequest): Promise<VAEGenerateResponse> {
   try {
-    const response = await integrationApiClient.post<VAEGenerateResponse>("/vae/generate", args);
+    const response = await generationApiClient.post<VAEGenerateResponse>("/generate", args);
     return vaeGenerateResponseSchema.parse(response.data);
   } catch (error) {
     throw normalizeApiError(error);

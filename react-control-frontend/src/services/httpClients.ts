@@ -15,3 +15,9 @@ export const directApiClient = axios.create({
   timeout: 10_000,
   headers: commonHeaders,
 });
+
+export const generationApiClient = axios.create({
+  baseURL: "/generationapi",
+  timeout: 10_000,
+  headers: commonHeaders,
+});

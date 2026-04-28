@@ -12,8 +12,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      '/directapi': {
+      },      '/generationapi': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/generationapi/, ''),
+      },      '/directapi': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
