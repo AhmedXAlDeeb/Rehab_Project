@@ -43,7 +43,7 @@ lightning_logs/
 
 # ─── Data Files ──────────────────────────────────────────────────────────────
 # Raw Ninapro data (large — do not commit, document in README)
-data/
+# data/`
 *.mat
 *.csv
 !resources/projects/RehabArm-RL-Sim2Real/logs/*.csv
