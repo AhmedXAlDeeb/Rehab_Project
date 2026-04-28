@@ -3,7 +3,6 @@ import { useState } from "react";
 import { GestureStreamPanel } from "./components/GestureStreamPanel";
 import { SignalSenderCard } from "./components/SignalSenderCard";
 import { ScenariosSection } from "./components/ScenariosSection";
-import { ScenarioTrainingCard } from "./components/ScenarioTrainingCard";
 import type { UnifiedInferenceResult } from "./types/api";
 
 function App() {
