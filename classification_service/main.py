@@ -12,27 +12,41 @@ import uvicorn
 N_CHANNELS = 12
 N_TIMESTEPS = 400
 N_CLASSES = 53
-DEFAULT_CHECKPOINT_PATH = Path(__file__).parent / "emg_model_epoch_7.pt"
+DEFAULT_CHECKPOINT_PATH = Path(__file__).parent / "emg_model_finetuned.pt"
+FALLBACK_CHECKPOINT_PATH = Path(__file__).parent / "emg_model_epoch_7"
 
 
 class EMGCNN(nn.Module):
-    def __init__(self, num_classes: int = N_CLASSES):
-        super().__init__()
-        self.conv1 = nn.Conv1d(in_channels=N_CHANNELS, out_channels=64, kernel_size=3)
+    def __init__(self, num_classes=53): 
+        super(EMGCNN, self).__init__()
+        # Larger kernel size initially to capture wider temporal features
+        self.conv1 = nn.Conv1d(in_channels=12, out_channels=64, kernel_size=5, padding=2)
+        self.bn1 = nn.BatchNorm1d(64) 
         self.pool1 = nn.MaxPool1d(kernel_size=2)
-        self.conv2 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3)
+        
+        self.conv2 = nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm1d(128) 
         self.pool2 = nn.MaxPool1d(kernel_size=2)
-        self.conv3 = nn.Conv1d(in_channels=128, out_channels=64, kernel_size=3)
+        
+        self.conv3 = nn.Conv1d(in_channels=128, out_channels=256, kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm1d(256) 
+        self.pool3 = nn.MaxPool1d(kernel_size=2)
+        
+        self.conv4 = nn.Conv1d(in_channels=256, out_channels=128, kernel_size=3, padding=1)
+        self.bn4 = nn.BatchNorm1d(128) 
+        self.pool4 = nn.MaxPool1d(kernel_size=2)
+        
         self.dropout = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(64 * 96, 128)
-        self.fc2 = nn.Linear(128, num_classes)
+        
+        # 400 window / (2*2*2*2 pooling) = 25
+        self.fc1 = nn.Linear(128 * 25, 256)
+        self.fc2 = nn.Linear(256, num_classes)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = F.relu(self.conv1(x))
-        x = self.pool1(x)
-        x = F.relu(self.conv2(x))
-        x = self.pool2(x)
-        x = F.relu(self.conv3(x))
+    def forward(self, x):
+        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+        x = self.pool3(F.relu(self.bn3(self.conv3(x))))
+        x = self.pool4(F.relu(self.bn4(self.conv4(x))))
         x = torch.flatten(x, 1)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
@@ -62,10 +76,15 @@ class FineTuneRequest(BaseModel):
 
 def _normalize_signal_shape(signal: List[List[float]]) -> torch.Tensor:
     tensor = torch.tensor(signal, dtype=torch.float32)
-    if tensor.shape == (N_CHANNELS, N_TIMESTEPS):
-        return tensor
     if tensor.shape == (N_TIMESTEPS, N_CHANNELS):
-        return tensor.transpose(0, 1)
+        tensor = tensor.transpose(0, 1)
+    
+    if tensor.shape == (N_CHANNELS, N_TIMESTEPS):
+        # Normalize per channel (Instance Normalization)
+        mean = tensor.mean(dim=1, keepdim=True)
+        std = tensor.std(dim=1, keepdim=True) + 1e-8
+        return (tensor - mean) / std
+        
     raise ValueError(f"Invalid input shape. Expected (12, 400) or (400, 12), but got {tuple(tensor.shape)}")
 
 
@@ -78,11 +97,53 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = EMGCNN(num_classes=N_CLASSES).to(device)
 checkpoint_path = DEFAULT_CHECKPOINT_PATH
 
+# Try primary checkpoint first (directory format = full model saved with torch.save(model, ...))
 if checkpoint_path.exists():
-    model.load_state_dict(torch.load(checkpoint_path, map_location=device))
-    print(f"Successfully loaded model weights from {checkpoint_path}")
+    try:
+        loaded = torch.load(checkpoint_path, map_location=device)
+        # Directory format saves the full model object, not just state_dict
+        if isinstance(loaded, nn.Module):
+            model = loaded.to(device)
+            print(f"[INIT] ✅ Full model loaded (torch.save(model)) from: {checkpoint_path}")
+        elif isinstance(loaded, dict):
+            model.load_state_dict(loaded)
+            print(f"[INIT] ✅ State-dict loaded from: {checkpoint_path}")
+        else:
+            print(f"[INIT] ⚠️  Unknown checkpoint format: {type(loaded)}. Trying as state_dict.")
+            model.load_state_dict(loaded)
+        print(f"[INIT]    Device : {device}")
+        print(f"[INIT]    Classes: {N_CLASSES}  |  Channels: {N_CHANNELS}  |  Timesteps: {N_TIMESTEPS}")
+    except Exception as e:
+        print(f"[INIT] ❌ Failed to load primary checkpoint '{checkpoint_path}': {e}")
+        # Try fallback .pt file
+        if FALLBACK_CHECKPOINT_PATH.exists():
+            try:
+                model.load_state_dict(torch.load(FALLBACK_CHECKPOINT_PATH, map_location=device))
+                checkpoint_path = FALLBACK_CHECKPOINT_PATH
+                print(f"[INIT] ✅ Fallback checkpoint loaded from: {checkpoint_path}")
+                print(f"[INIT]    Device : {device}")
+                print(f"[INIT]    Classes: {N_CLASSES}  |  Channels: {N_CHANNELS}  |  Timesteps: {N_TIMESTEPS}")
+            except Exception as e2:
+                print(f"[INIT] ❌ Fallback also failed: {e2}")
+                print(f"[INIT]    Running with UNTRAINED weights — predictions will be random!")
+        else:
+            print(f"[INIT] ⚠️  Fallback checkpoint also NOT FOUND: {FALLBACK_CHECKPOINT_PATH}")
+            print(f"[INIT]    Running with UNTRAINED weights — predictions will be random!")
 else:
-    print(f"WARNING: Checkpoint {checkpoint_path} not found. Running with untrained weights for demonstration.")
+    print(f"[INIT] ⚠️  Primary checkpoint NOT FOUND at: {checkpoint_path}")
+    if FALLBACK_CHECKPOINT_PATH.exists():
+        try:
+            model.load_state_dict(torch.load(FALLBACK_CHECKPOINT_PATH, map_location=device))
+            checkpoint_path = FALLBACK_CHECKPOINT_PATH
+            print(f"[INIT] ✅ Fallback checkpoint loaded from: {checkpoint_path}")
+            print(f"[INIT]    Device : {device}")
+            print(f"[INIT]    Classes: {N_CLASSES}  |  Channels: {N_CHANNELS}  |  Timesteps: {N_TIMESTEPS}")
+        except Exception as e:
+            print(f"[INIT] ❌ Fallback also failed: {e}")
+            print(f"[INIT]    Running with UNTRAINED weights — predictions will be random!")
+    else:
+        print(f"[INIT] ⚠️  Fallback checkpoint also NOT FOUND: {FALLBACK_CHECKPOINT_PATH}")
+        print(f"[INIT]    Running with UNTRAINED weights — predictions will be random!")
 
 model.eval()
 
@@ -100,19 +161,49 @@ async def health() -> dict:
 @app.post("/predict")
 async def predict_emg(data: SignalInput) -> dict:
     try:
-        input_tensor = _normalize_signal_shape(data.signal).unsqueeze(0).to(device)
+        # --- DIAGNOSTIC: RAW INPUT ---
+        raw_rows = len(data.signal)
+        raw_cols = len(data.signal[0]) if data.signal else 0
+        print(f"\n[PREDICT] ── Incoming Signal ──────────────────────────")
+        print(f"[PREDICT]   Raw list shape  : [{raw_rows}, {raw_cols}]")
+
+        # Normalize shape to (12, 400)
+        normalized = _normalize_signal_shape(data.signal)
+        print(f"[PREDICT]   Normalized shape: {tuple(normalized.shape)}  (expected: ({N_CHANNELS}, {N_TIMESTEPS}))")
+
+        # Add batch dim → (1, 12, 400)
+        input_tensor = normalized.unsqueeze(0).to(device)
+        print(f"[PREDICT]   Tensor to model : {tuple(input_tensor.shape)}  (expected: (1, {N_CHANNELS}, {N_TIMESTEPS}))")
+        print(f"[PREDICT]   Value range     : min={input_tensor.min().item():.4f}  max={input_tensor.max().item():.4f}")
+
         with torch.no_grad():
-            outputs = model(input_tensor)
+            outputs = model(input_tensor)          # raw logits: (1, 53)
             probabilities = torch.softmax(outputs, dim=1)
             confidence, predicted_class = torch.max(probabilities, 1)
+
+        # --- DIAGNOSTIC: MODEL OUTPUT ---
+        pred_id   = int(predicted_class.item())
+        conf_val  = float(confidence.item())
+        top5_vals, top5_idxs = torch.topk(probabilities, k=5, dim=1)
+
+        print(f"[PREDICT] ── Model Output ───────────────────────────────")
+        print(f"[PREDICT]   Logits shape    : {tuple(outputs.shape)}")
+        print(f"[PREDICT]   Logit range     : min={outputs.min().item():.4f}  max={outputs.max().item():.4f}")
+        print(f"[PREDICT]   Top-5 classes   : {top5_idxs[0].tolist()}")
+        print(f"[PREDICT]   Top-5 confidences: {[f'{v:.4f}' for v in top5_vals[0].tolist()]}")
+        print(f"[PREDICT]   ✅ Predicted class: {pred_id}  |  Confidence: {conf_val:.4f} ({conf_val*100:.1f}%)")
+        print(f"[PREDICT] ─────────────────────────────────────────────")
+
         return {
-            "predicted_class": int(predicted_class.item()),
-            "confidence": float(confidence.item()),
+            "predicted_class": pred_id,
+            "confidence": conf_val,
             "status": "success",
         }
     except ValueError as exc:
+        print(f"[PREDICT] ❌ ValueError: {exc}")
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
+        print(f"[PREDICT] ❌ Exception: {exc}")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 

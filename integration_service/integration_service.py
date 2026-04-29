@@ -245,18 +245,36 @@ async def run_scenario(scenario_id: int):
 
     total_timesteps = data.shape[1]
     chunk_size = N_TIMESTEPS
+    n_chunks = total_timesteps // chunk_size
     results = []
+
+    # --- DIAGNOSTIC: SCENARIO LOAD ---
+    print(f"\n[SCENARIO {scenario_id}] ══════════════════════════════════════════")
+    print(f"[SCENARIO {scenario_id}]   File        : {file_path}")
+    print(f"[SCENARIO {scenario_id}]   Loaded shape: {data.shape}  (channels x total_timesteps)")
+    print(f"[SCENARIO {scenario_id}]   Chunk size  : {chunk_size} timesteps")
+    print(f"[SCENARIO {scenario_id}]   Num chunks  : {n_chunks}  (= {total_timesteps} // {chunk_size})")
+    print(f"[SCENARIO {scenario_id}]   Value range : min={data.min():.4f}  max={data.max():.4f}")
+    print(f"[SCENARIO {scenario_id}] ══════════════════════════════════════════")
 
     # Iterate through the stacked array in chunks of 400 timesteps
     for i in range(0, total_timesteps, chunk_size):
         chunk = data[:, i:i+chunk_size]
+        chunk_idx = i // chunk_size
         
         # Skip trailing incomplete chunks
         if chunk.shape[1] < chunk_size:
-            break 
-            
+            print(f"[SCENARIO {scenario_id}]   Chunk {chunk_idx}: SKIPPED (only {chunk.shape[1]} timesteps, need {chunk_size})")
+            break
+
         signal_list = chunk.tolist()
-        
+
+        # --- DIAGNOSTIC: CHUNK SENT TO AI ---
+        print(f"\n[SCENARIO {scenario_id}] ── Chunk {chunk_idx} / {n_chunks - 1} ────────────────────────────")
+        print(f"[SCENARIO {scenario_id}]   Chunk shape    : {chunk.shape}  → sending as list [{len(signal_list)}, {len(signal_list[0])}]")
+        print(f"[SCENARIO {scenario_id}]   Value range    : min={chunk.min():.4f}  max={chunk.max():.4f}")
+        print(f"[SCENARIO {scenario_id}]   Sending to AI  : POST {AI_SERVICE_URL}")
+
         try:
             async with httpx.AsyncClient() as client:
                 ai_payload = {"signal": signal_list}
@@ -264,28 +282,59 @@ async def run_scenario(scenario_id: int):
                 
                 if response.status_code == 200:
                     ai_result = response.json()
+
+                    # --- DIAGNOSTIC: AI RESPONSE ---
+                    print(f"[SCENARIO {scenario_id}]   AI HTTP status : {response.status_code} OK")
+                    print(f"[SCENARIO {scenario_id}]   AI raw response: {ai_result}")
+
                     predicted_class_id = ai_result.get("predicted_class")
+                    ai_confidence      = ai_result.get("confidence", "N/A")
                     
                     if predicted_class_id is not None:
+                        # --- DIAGNOSTIC: MAPPING ---
                         gesture_name = ID_TO_GESTURE.get(predicted_class_id, "unknown_gesture")
+                        in_map       = predicted_class_id in ID_TO_GESTURE
+                        print(f"[SCENARIO {scenario_id}]   Predicted ID   : {predicted_class_id}  |  Confidence: {ai_confidence}")
+                        print(f"[SCENARIO {scenario_id}]   ID in map?     : {'✅ YES' if in_map else '❌ NO (ID_TO_GESTURE has keys 0-' + str(max(ID_TO_GESTURE.keys())) + ')'}")
+                        print(f"[SCENARIO {scenario_id}]   Mapped gesture : '{gesture_name}'")
+
                         ws_status = await send_to_websocket(gesture_name)
+                        print(f"[SCENARIO {scenario_id}]   WebSocket      : {ws_status}")
                         
                         results.append({
-                            "chunk_index": i // chunk_size,
+                            "chunk_index": chunk_idx,
                             "predicted_id": predicted_class_id,
+                            "confidence": ai_confidence,
                             "gesture": gesture_name,
                             "ws_status": ws_status
                         })
                     else:
-                        results.append({"chunk_index": i // chunk_size, "error": "AI returned no class ID"})
+                        print(f"[SCENARIO {scenario_id}]   ❌ AI returned no 'predicted_class' key! Response: {ai_result}")
+                        results.append({"chunk_index": chunk_idx, "error": "AI returned no class ID"})
                 else:
-                    results.append({"chunk_index": i // chunk_size, "error": f"AI service HTTP {response.status_code}"})
+                    print(f"[SCENARIO {scenario_id}]   ❌ AI HTTP error: {response.status_code}  body={response.text[:200]}")
+                    results.append({"chunk_index": chunk_idx, "error": f"AI service HTTP {response.status_code}"})
                     
         except Exception as e:
-            results.append({"chunk_index": i // chunk_size, "error": str(e)})
+            print(f"[SCENARIO {scenario_id}]   ❌ Exception in chunk {chunk_idx}: {e}")
+            results.append({"chunk_index": chunk_idx, "error": str(e)})
 
         # Wait 1 second before processing the next movement to simulate real-time playback
-        await asyncio.sleep(1.0) 
+        await asyncio.sleep(1.0)
+
+    # --- DIAGNOSTIC: FINAL SUMMARY ---
+    ok_count  = sum(1 for r in results if "error" not in r)
+    err_count = sum(1 for r in results if "error" in r)
+    print(f"\n[SCENARIO {scenario_id}] ══ Summary ══════════════════════════════════")
+    print(f"[SCENARIO {scenario_id}]   Chunks processed: {len(results)} / {n_chunks}")
+    print(f"[SCENARIO {scenario_id}]   ✅ Successful    : {ok_count}")
+    print(f"[SCENARIO {scenario_id}]   ❌ Errors        : {err_count}")
+    for r in results:
+        if "error" not in r:
+            print(f"[SCENARIO {scenario_id}]     Chunk {r['chunk_index']}: ID={r['predicted_id']}  conf={r.get('confidence','?')}  gesture='{r['gesture']}'")
+        else:
+            print(f"[SCENARIO {scenario_id}]     Chunk {r['chunk_index']}: ERROR → {r['error']}")
+    print(f"[SCENARIO {scenario_id}] ══════════════════════════════════════════════")
 
     return {
         "status": "success",
