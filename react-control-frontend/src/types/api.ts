@@ -87,4 +87,5 @@ export interface GestureEvent {
   confidence: number;
   timestamp: number;
   source?: string;
+  signal?: number[][];
 }

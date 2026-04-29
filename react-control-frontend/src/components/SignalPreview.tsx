@@ -25,9 +25,26 @@ export function SignalPreview({ signal, width = 800, height = 300 }: SignalPrevi
     ctx.fillStyle = "#1e1e1e";
     ctx.fillRect(0, 0, width, height);
 
-    // Global min/max scaled roughly for 12 channels
-    const maxValue = 2.5; 
-    const minValue = -2.5;
+    // Compute dynamic min/max bounds based on the signal data
+    let maxVal = -Infinity;
+    let minVal = Infinity;
+    for (const channel of signal) {
+      for (const val of channel) {
+        if (val > maxVal) maxVal = val;
+        if (val < minVal) minVal = val;
+      }
+    }
+    
+    // Ensure a minimum visual range so absolute silence isn't blown up into massive noise
+    if (maxVal - minVal < 0.0001) {
+      const mid = (maxVal + minVal) / 2 || 0;
+      maxVal = mid + 0.0005;
+      minVal = mid - 0.0005;
+    }
+
+    const padding = (maxVal - minVal) * 0.1;
+    const maxValue = maxVal + padding; 
+    const minValue = minVal - padding;
     const valueRange = maxValue - minValue;
 
     const channelHeight = height / SIGNAL_CHANNELS;

@@ -47,15 +47,16 @@ async def handle(websocket):
                 if _env is not None:
                     # Only enqueue — never call mj_step from here
                     _env.request_gesture(gesture)
-                    await broadcast(
-                        {
-                            "type": "gesture",
-                            "gesture": gesture,
-                            "confidence": confidence,
-                            "source": "ws_bridge",
-                            "timestamp": int(time.time() * 1000),
-                        }
-                    )
+                    payload = {
+                        "type": "gesture",
+                        "gesture": gesture,
+                        "confidence": confidence,
+                        "source": "ws_bridge",
+                        "timestamp": int(time.time() * 1000),
+                    }
+                    if "signal" in msg:
+                        payload["signal"] = msg["signal"]
+                    await broadcast(payload)
                     await websocket.send(json.dumps({"status": "ok", "gesture": gesture}))
                 else:
                     await websocket.send(json.dumps({"status": "env_not_ready"}))
