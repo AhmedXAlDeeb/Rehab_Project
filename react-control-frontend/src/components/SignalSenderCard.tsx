@@ -17,6 +17,7 @@ function prettyMode(mode: InferenceMode): string {
   return mode === "integration" ? "Integration Service :8001" : "Direct Classifier :8000";
 }
 
+import { useGestureWebSocket } from "../hooks/useGestureWebSocket";
 import { SignalPreview } from "./SignalPreview";
 
 export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps) {
@@ -40,6 +41,10 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
       final_loss: number | null;
     };
   } | null>(null);
+
+  const [viewMode, setViewMode] = useState<"live" | "mock">("live");
+  const { events } = useGestureWebSocket();
+  const latestLiveSignal = events[0]?.signal;
 
   const [subjectIdx, setSubjectIdx] = useState(0);
   const [gestureIdx, setGestureIdx] = useState(5);
@@ -187,12 +192,36 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
 
       <div className="preview-box">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-          <small>Mock Signal Preview (12 channels, 400 timesteps)</small>
-          <button type="button" className="btn-small" onClick={() => setSeed(Date.now())}>
-            Shuffle Data
-          </button>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <small>Signal Preview (12 channels, 400 timesteps)</small>
+            <div style={{ marginLeft: "1rem", display: "flex", gap: "4px" }}>
+              <button
+                type="button"
+                className={`btn-small ${viewMode === "live" ? "active" : "ghost-button"}`}
+                onClick={() => setViewMode("live")}
+              >
+                Live Scenario
+              </button>
+              <button
+                type="button"
+                className={`btn-small ${viewMode === "mock" ? "active" : "ghost-button"}`}
+                onClick={() => setViewMode("mock")}
+              >
+                Mock Data
+              </button>
+            </div>
+          </div>
+          {viewMode === "mock" && (
+            <button type="button" className="btn-small" onClick={() => setSeed(Date.now())}>
+              Shuffle Mock Data
+            </button>
+          )}
         </div>
-        <SignalPreview signal={createMockSignal(seed)} width={800} height={240} />
+        <SignalPreview 
+          signal={viewMode === "live" && latestLiveSignal ? latestLiveSignal : createMockSignal(seed)} 
+          width={800} 
+          height={240} 
+        />
       </div>
 
       <button type="button" className="primary-button" disabled={isSending} onClick={() => {

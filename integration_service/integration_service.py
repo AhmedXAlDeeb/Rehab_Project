@@ -152,11 +152,13 @@ class VAEEngine:
 vae_engine = VAEEngine(DEFAULT_VAE_CHECKPOINT)
 
 # --- 3. WebSocket Sender ---
-async def send_to_websocket(gesture_name: str):
+async def send_to_websocket(gesture_name: str, signal_chunk: list = None):
     try:
         async with websockets.connect(WS_SERVER_URL, ping_interval=None) as ws:
             # Using your example format with hardcoded confidence: 1.0
             msg = {"gesture": gesture_name, "confidence": 1.0}
+            if signal_chunk is not None:
+                msg["signal"] = signal_chunk
             await ws.send(json.dumps(msg))
             
             raw = await ws.recv()
@@ -298,7 +300,7 @@ async def run_scenario(scenario_id: int):
                         print(f"[SCENARIO {scenario_id}]   ID in map?     : {'✅ YES' if in_map else '❌ NO (ID_TO_GESTURE has keys 0-' + str(max(ID_TO_GESTURE.keys())) + ')'}")
                         print(f"[SCENARIO {scenario_id}]   Mapped gesture : '{gesture_name}'")
 
-                        ws_status = await send_to_websocket(gesture_name)
+                        ws_status = await send_to_websocket(gesture_name, signal_list)
                         print(f"[SCENARIO {scenario_id}]   WebSocket      : {ws_status}")
                         
                         results.append({

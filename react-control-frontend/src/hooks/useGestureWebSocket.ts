@@ -32,6 +32,7 @@ function parseGestureEvent(raw: unknown): GestureEvent | null {
     confidence,
     timestamp,
     source: typeof payload.source === "string" ? payload.source : undefined,
+    signal: Array.isArray(payload.signal) ? payload.signal as number[][] : undefined,
   };
 }
 
