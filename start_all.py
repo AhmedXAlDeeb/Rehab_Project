@@ -40,7 +40,7 @@ def main():
         {
             "name": "WebSocket",
             "cwd": os.path.join(root_dir, "simulation-frontend"),
-            "cmd": [venv_python, "bridge/ws_server.py"],
+            "cmd": [venv_python, "viz/ws_streamer.py"],
             "shell": False
         },
         {

@@ -1,6 +1,36 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 :root {
+  --bg-paper: #12121f;
+  --bg-card: #161625;
+  --text-main: #e8e8e8;
+  --text-subtle: #8b8b9e;
+  --border-soft: rgba(0, 212, 255, 0.15);
+  --primary: #00d4ff;
+  --secondary: #ff6b35;
+  --accent-glow: rgba(0, 212, 255, 0.3);
+  --body-bg: linear-gradient(180deg, #0a0a12 0%, #0d0d18 100%);
+  --body-bg-overlay: 
+    radial-gradient(ellipse at top, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(255, 107, 53, 0.05) 0%, transparent 50%);
+  --app-backdrop: 
+    radial-gradient(circle at 8% 7%, rgba(0, 212, 255, 0.15) 0%, transparent 33%),
+    radial-gradient(circle at 88% 6%, rgba(255, 107, 53, 0.12) 0%, transparent 36%);
+  --card-bg: rgba(18, 18, 31, 0.85);
+  --input-bg: #0a0a12;
+  --mode-btn-bg: #1a1a2e;
+  --mode-btn-active-bg: rgba(0, 212, 255, 0.15);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --chip-bg: rgba(0, 212, 255, 0.08);
+  --preview-bg: rgba(0, 212, 255, 0.05);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="light"] {
   --bg-paper: #fffdf8;
   --bg-card: #fffefb;
   --text-main: #1f2937;
@@ -8,11 +38,21 @@
   --border-soft: rgba(15, 23, 42, 0.12);
   --primary: #0f766e;
   --secondary: #b45309;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --accent-glow: rgba(15, 118, 110, 0.2);
+  --body-bg: 
+    linear-gradient(160deg, rgba(239, 233, 216, 0.85), rgba(228, 236, 230, 0.88)),
+    repeating-linear-gradient(35deg, rgba(15, 23, 42, 0.02), rgba(15, 23, 42, 0.02) 1px, transparent 1px, transparent 9px);
+  --body-bg-overlay: none;
+  --app-backdrop: 
+    radial-gradient(circle at 8% 7%, rgba(15, 118, 110, 0.15) 0%, transparent 33%),
+    radial-gradient(circle at 88% 6%, rgba(180, 83, 9, 0.15) 0%, transparent 36%);
+  --card-bg: rgba(255, 255, 255, 0.88);
+  --input-bg: #fff;
+  --mode-btn-bg: #fcfcfb;
+  --mode-btn-active-bg: rgba(15, 118, 110, 0.11);
+  --shadow-card: 0 8px 18px rgba(2, 6, 23, 0.04);
+  --chip-bg: rgba(15, 118, 110, 0.08);
+  --preview-bg: rgba(15, 118, 110, 0.06);
 }
 
 * {
@@ -27,17 +67,10 @@ body,
 }
 
 body {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
   color: var(--text-main);
-  background:
-    linear-gradient(160deg, rgba(239, 233, 216, 0.85), rgba(228, 236, 230, 0.88)),
-    repeating-linear-gradient(
-      35deg,
-      rgba(15, 23, 42, 0.02),
-      rgba(15, 23, 42, 0.02) 1px,
-      transparent 1px,
-      transparent 9px
-    );
+  background: var(--body-bg-overlay), var(--body-bg);
+  background-attachment: fixed;
 }
 
 .app-shell {
@@ -49,9 +82,7 @@ body {
 .app-backdrop {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 8% 7%, rgba(15, 118, 110, 0.2) 0%, transparent 33%),
-    radial-gradient(circle at 88% 6%, rgba(180, 83, 9, 0.22) 0%, transparent 36%);
+  background: var(--app-backdrop);
   pointer-events: none;
 }
 
@@ -65,11 +96,11 @@ body {
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--card-bg);
   border: 1px solid var(--border-soft);
   border-radius: 16px;
   padding: 1rem;
-  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.04);
+  box-shadow: var(--shadow-card);
 }
 
 .hero-panel h1 {
@@ -82,6 +113,33 @@ body {
   color: var(--text-subtle);
   max-width: 840px;
   line-height: 1.5;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background: var(--card-bg);
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  background: var(--chip-bg);
+  box-shadow: 0 0 15px var(--accent-glow);
 }
 
 .last-result {
@@ -133,17 +191,32 @@ body {
   border-radius: 999px;
   padding: 0.3rem 0.62rem;
   font-size: 0.8rem;
-  background: var(--bg-paper);
+  background: var(--chip-bg);
+  color: var(--primary);
 }
 
 .chip-primary {
+  border-color: rgba(0, 212, 255, 0.5);
+  background: rgba(0, 212, 255, 0.2);
+  color: #00d4ff;
+}
+
+[data-theme="light"] .chip-primary {
   border-color: rgba(15, 118, 110, 0.42);
   background: rgba(15, 118, 110, 0.14);
+  color: #0f766e;
 }
 
 .chip-secondary {
+  border-color: rgba(255, 107, 53, 0.5);
+  background: rgba(255, 107, 53, 0.15);
+  color: #ff6b35;
+}
+
+[data-theme="light"] .chip-secondary {
   border-color: rgba(180, 83, 9, 0.42);
   background: rgba(180, 83, 9, 0.12);
+  color: #b45309;
 }
 
 .mode-tabs {
@@ -164,20 +237,26 @@ body {
 
 .mode-btn {
   padding: 0.6rem 0.8rem;
-  background: #fcfcfb;
+  background: var(--mode-btn-bg);
   font-weight: 600;
 }
 
 .mode-btn.active {
+  border-color: rgba(0, 212, 255, 0.6);
+  background: var(--mode-btn-active-bg);
+  color: #00d4ff;
+}
+
+[data-theme="light"] .mode-btn.active {
   border-color: rgba(15, 118, 110, 0.45);
-  background: rgba(15, 118, 110, 0.11);
+  color: #0f766e;
 }
 
 .preview-box {
   border: 1px dashed var(--border-soft);
   border-radius: 11px;
   padding: 0.7rem;
-  background: rgba(15, 118, 110, 0.06);
+  background: var(--preview-bg);
 }
 
 .preview-box small {
@@ -194,10 +273,17 @@ body {
 
 .primary-button {
   border: none;
-  background: var(--primary);
-  color: #f9fffd;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  color: #0a0a0a;
   padding: 0.75rem 0.95rem;
   font-weight: 700;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  transform: translateY(-1px);
 }
 
 .primary-button:disabled {
@@ -206,9 +292,14 @@ body {
 }
 
 .ghost-button {
-  background: #fbfbfb;
+  background: var(--mode-btn-bg);
   color: var(--text-main);
   padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border-soft);
+}
+
+.ghost-button:hover:not(:disabled) {
+  background: rgba(0, 212, 255, 0.1);
 }
 
 .alert {
@@ -324,7 +415,13 @@ body {
   padding: 0.45rem 0.5rem;
   font: inherit;
   color: var(--text-main);
-  background: #fff;
+  background: var(--input-bg);
+}
+
+.control-grid input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
 }
 
 .button-group-inline {
@@ -334,6 +431,32 @@ body {
   justify-content: flex-end;
 }
 
+.upload-zone {
+  border: 2px dashed var(--border-soft);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--preview-bg);
+}
+
+.upload-zone:hover {
+  border-color: var(--primary);
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.upload-icon {
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+.upload-zone p {
+  margin: 0.5rem 0;
+  color: var(--text-main);
+}
+
 @media (max-width: 940px) {
   .main-grid {
     grid-template-columns: 1fr;
@@ -341,5 +464,11 @@ body {
 
   .control-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

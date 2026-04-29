@@ -9,12 +9,22 @@ from envs.gestures import get_action
 MODEL_PATH = Path(__file__).parent.parent / "models" / "myo_sim" / "hand" / "myohand.xml"
 
 class HandEnv:
-    def __init__(self):
+    def __init__(self, render_mode=None):
         self.model = mujoco.MjModel.from_xml_path(str(MODEL_PATH))
         self.data = mujoco.MjData(self.model)
         self.current_gesture = "rest"
         self.gesture_queue = queue.Queue()
+        self.render_mode = render_mode
+        self.renderer = None
+        if render_mode == "rgb_array":
+            self.renderer = mujoco.Renderer(self.model, 480, 640)
         print(f"Model loaded: {self.model.nu} actuators, {self.model.nq} DOF")
+
+    def get_frame(self):
+        if self.renderer:
+            self.renderer.update_scene(self.data)
+            return self.renderer.render()
+        return None
 
     def request_gesture(self, gesture_name: str):
         """Called from any thread — just enqueues, never touches MuJoCo."""

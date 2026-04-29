@@ -5,24 +5,22 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:8001',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },      '/generationapi': {
-        target: 'http://localhost:8003',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/generationapi/, ''),
-      },      '/directapi': {
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/directapi': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/directapi/, ''),
+        rewrite: (path) => path.replace(/^\/directapi/, '')
       },
-    },
-  },
+      '/generationapi': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/generationapi/, '')
+      }
+    }
+  }
 })

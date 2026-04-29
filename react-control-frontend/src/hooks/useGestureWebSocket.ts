@@ -38,6 +38,7 @@ function parseGestureEvent(raw: unknown): GestureEvent | null {
 export function useGestureWebSocket() {
   const socketUrl = import.meta.env.VITE_WS_URL ?? DEFAULT_WS_URL;
   const [events, setEvents] = useState<GestureEvent[]>([]);
+  const [videoFrame, setVideoFrame] = useState<string | null>(null);
   const [lastSystemMessage, setLastSystemMessage] = useState<string | null>(null);
   const [connectionLabel, setConnectionLabel] = useState<"idle" | "connecting" | "connected" | "closed">("idle");
 
@@ -63,7 +64,8 @@ export function useGestureWebSocket() {
         }
         reconnectCountRef.current = 0;
         setConnectionLabel("connected");
-        setLastSystemMessage("socket connected");
+        setLastSystemMessage(`Connected to ${socketUrl}`);
+        console.log("WebSocket connected to", socketUrl);
       };
 
       socket.onmessage = (event) => {
@@ -73,6 +75,13 @@ export function useGestureWebSocket() {
 
         try {
           const payload = JSON.parse(String(event.data));
+          
+          if (payload && payload.type === "video_frame") {
+            console.log("Video frame received, size:", payload.image?.length);
+            setVideoFrame(payload.image);
+            return;
+          }
+
           const parsedEvent = parseGestureEvent(payload);
           if (parsedEvent) {
             setEvents((previous) => [parsedEvent, ...previous].slice(0, MAX_EVENTS));
@@ -89,19 +98,22 @@ export function useGestureWebSocket() {
         }
       };
 
-      socket.onerror = () => {
+      socket.onerror = (event) => {
         if (!isActive) {
           return;
         }
-        setLastSystemMessage("socket error");
+        console.error("WebSocket error:", event);
+        setLastSystemMessage("socket error - check console for details");
       };
 
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         if (!isActive) {
           return;
         }
 
+        console.log("WebSocket closed:", event.code, event.reason);
         setConnectionLabel("closed");
+        setLastSystemMessage(`Connection closed: ${event.code}`);
         reconnectCountRef.current += 1;
 
         if (reconnectCountRef.current <= MAX_RECONNECT_ATTEMPTS) {
@@ -134,6 +146,7 @@ export function useGestureWebSocket() {
   return {
     socketUrl,
     events,
+    videoFrame,
     connectionLabel,
     clearEvents,
     lastSystemMessage,

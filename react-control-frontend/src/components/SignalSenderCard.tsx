@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import {
   generateAndFineTuneClassifier,
@@ -17,6 +17,8 @@ function prettyMode(mode: InferenceMode): string {
   return mode === "integration" ? "Integration Service :8001" : "Direct Classifier :8000";
 }
 
+import { SignalPreview } from "./SignalPreview";
+
 export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps) {
   const [mode, setMode] = useState<InferenceMode>("integration");
   const [isSending, setIsSending] = useState(false);
@@ -25,7 +27,19 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
   const [error, setError] = useState<string | null>(null);
   const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
   const [lastResult, setLastResult] = useState<UnifiedInferenceResult | null>(null);
-  const [vaeInfo, setVaeInfo] = useState<string | null>(null);
+  const [vaeInfo, setVaeInfo] = useState<{
+    message: string;
+    samplesCount?: number;
+    shape?: [number, number];
+    gestureLabel?: number;
+    finetune?: {
+      status: string;
+      samples_used: number;
+      epochs: number;
+      initial_loss: number | null;
+      final_loss: number | null;
+    };
+  } | null>(null);
 
   const [subjectIdx, setSubjectIdx] = useState(0);
   const [gestureIdx, setGestureIdx] = useState(5);
@@ -42,8 +56,6 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
   const [ftBatchSize, setFtBatchSize] = useState(32);
   const [ftLearningRate, setFtLearningRate] = useState(1e-4);
 
-  const samplePreview = useMemo(() => createMockSignal(2026)[0].slice(0, 8), []);
-
   const handleSend = async () => {
     const startedAt = performance.now();
     setIsSending(true);
@@ -52,7 +64,7 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
     try {
       const result = await sendSignalForInference({
         mode,
-        signal: createMockSignal(Date.now()),
+        signal: createMockSignal(seed),
       });
       setLastResult(result);
       onInferenceComplete(result);
@@ -82,10 +94,12 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
         seed,
       });
       const preview = response.samples[0]?.[0]?.slice(0, 5).map((v) => v.toFixed(3)).join(", ") ?? "n/a";
-      setVaeInfo(
-        `Generated ${response.n_samples} samples (${response.shape[0]}x${response.shape[1]}), ` +
-          `gesture=${response.gesture_label}, modelLoaded=${response.model_loaded}. ch0 preview: [${preview}]`,
-      );
+      setVaeInfo({
+        message: `Generated ${response.n_samples} samples. ch0 preview: [${preview}]`,
+        samplesCount: response.n_samples,
+        shape: response.shape,
+        gestureLabel: response.gesture_label,
+      });
     } catch (caughtError) {
       const normalized =
         caughtError instanceof InferenceApiError
@@ -113,11 +127,19 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
         finetune_batch_size: ftBatchSize,
         finetune_learning_rate: ftLearningRate,
       });
-      setVaeInfo(
-        `Generated ${response.generation.n_samples} samples and fine-tuned classifier: ` +
-          `${response.finetune.status}, loss ${response.finetune.initial_loss?.toFixed(4) ?? "n/a"} -> ` +
-          `${response.finetune.final_loss?.toFixed(4) ?? "n/a"}.`,
-      );
+      setVaeInfo({
+        message: `Generated ${response.generation.n_samples} samples and fine-tuned classifier`,
+        samplesCount: response.generation.n_samples,
+        shape: response.generation.shape,
+        gestureLabel: response.generation.gesture_label,
+        finetune: {
+          status: response.finetune.status,
+          samples_used: response.finetune.samples_used,
+          epochs: response.finetune.epochs,
+          initial_loss: response.finetune.initial_loss,
+          final_loss: response.finetune.final_loss,
+        },
+      });
     } catch (caughtError) {
       const normalized =
         caughtError instanceof InferenceApiError ? caughtError : new InferenceApiError("failed to fine-tune model");
@@ -164,11 +186,19 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
       </div>
 
       <div className="preview-box">
-        <small>Channel[0] preview</small>
-        <pre>[{samplePreview.join(", ")} ...]</pre>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+          <small>Mock Signal Preview (12 channels, 400 timesteps)</small>
+          <button type="button" className="btn-small" onClick={() => setSeed(Date.now())}>
+            Shuffle Data
+          </button>
+        </div>
+        <SignalPreview signal={createMockSignal(seed)} width={800} height={240} />
       </div>
 
-      <button type="button" className="primary-button" disabled={isSending} onClick={handleSend}>
+      <button type="button" className="primary-button" disabled={isSending} onClick={() => {
+        // use the previewed seed
+        handleSend();
+      }}>
         {isSending ? "Sending..." : `Send Single Shot (${prettyMode(mode)})`}
       </button>
 
@@ -306,7 +336,27 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
           </div>
         </div>
 
-        {vaeInfo && <div className="alert alert-warn">{vaeInfo}</div>}
+        {vaeInfo && (
+          <div className="alert alert-info" style={{ marginTop: "1rem" }}>
+            <strong>{vaeInfo.message}</strong>
+            <ul style={{ marginTop: "0.5rem", marginBottom: 0, paddingLeft: "1.2rem" }}>
+              {vaeInfo.samplesCount != null && <li>Generated list of <b>{vaeInfo.samplesCount} samples</b> representing gesture <b>{vaeInfo.gestureLabel}</b></li>}
+              {vaeInfo.shape != null && <li>Data shape: {vaeInfo.shape[0]} x {vaeInfo.shape[1]}</li>}
+            </ul>
+
+            {vaeInfo.finetune && (
+              <div style={{ marginTop: "1rem", background: "rgba(0,0,0,0.1)", padding: "0.8rem", borderRadius: "6px" }}>
+                <strong>Fine-Tuning Results:</strong>
+                <ul style={{ marginTop: "0.5rem", marginBottom: 0, paddingLeft: "1.2rem" }}>
+                  <li>Status: <span className="chip chip-primary">{vaeInfo.finetune.status}</span></li>
+                  <li>Samples used: {vaeInfo.finetune.samples_used}</li>
+                  <li>Epochs trained: {vaeInfo.finetune.epochs}</li>
+                  <li>Loss: {vaeInfo.finetune.initial_loss?.toFixed(4) ?? "N/A"} &rarr; <b>{vaeInfo.finetune.final_loss?.toFixed(4) ?? "N/A"}</b></li>
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
