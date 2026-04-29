@@ -3,6 +3,7 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 import queue
+import threading
 from pathlib import Path
 from envs.gestures import get_action
 
@@ -16,14 +17,16 @@ class HandEnv:
         self.gesture_queue = queue.Queue()
         self.render_mode = render_mode
         self.renderer = None
+        self.lock = threading.Lock()
         if render_mode == "rgb_array":
             self.renderer = mujoco.Renderer(self.model, 480, 640)
         print(f"Model loaded: {self.model.nu} actuators, {self.model.nq} DOF")
 
     def get_frame(self):
-        if self.renderer:
-            self.renderer.update_scene(self.data)
-            return self.renderer.render()
+        with self.lock:
+            if self.renderer:
+                self.renderer.update_scene(self.data)
+                return self.renderer.render()
         return None
 
     def request_gesture(self, gesture_name: str):
@@ -38,11 +41,14 @@ class HandEnv:
             n = self.model.nu
             action = np.resize(action, n)
             action = np.clip(action, 0.0, 1.0)
-            self.data.ctrl[:] = action
-            self.current_gesture = gesture_name
+            with self.lock:
+                self.data.ctrl[:] = action
+                self.current_gesture = gesture_name
         except queue.Empty:
             pass
-        mujoco.mj_step(self.model, self.data)
+        
+        with self.lock:
+            mujoco.mj_step(self.model, self.data)
 
     def close(self):
         pass

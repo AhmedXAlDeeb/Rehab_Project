@@ -4,35 +4,35 @@ export function ScenariosSection() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const SCENARIOS = [
-    { 
-      id: 1, 
-      title: "Scenario 1: Drinking from a Cup", 
+    {
+      id: 1,
+      title: "Scenario 1: Drinking from a Cup",
       dbs: "Primary: DB3 | Secondary: DB2",
-      desc: "The most fundamental ADL for amputees. DB3 gives real amputee EMG; DB2 pre-trains on a larger intact cohort." 
+      desc: "The most fundamental ADL for amputees. DB3 gives real amputee EMG; DB2 pre-trains on a larger intact cohort."
     },
-    { 
-      id: 2, 
-      title: "Scenario 2: Writing with a Pen", 
+    {
+      id: 2,
+      title: "Scenario 2: Writing with a Pen",
       dbs: "Primary: DB2 | Secondary: DB3, DB8",
-      desc: "DB8 explicitly labels tripod grip as a movement class, making it a perfect supplement for this precision scenario." 
+      desc: "DB8 explicitly labels tripod grip as a movement class, making it a perfect supplement for this precision scenario."
     },
-    { 
-      id: 3, 
-      title: "Scenario 3: Unlocking a Door", 
+    {
+      id: 3,
+      title: "Scenario 3: Unlocking a Door",
       dbs: "Primary: DB2 | Secondary: DB3",
-      desc: "Simulates lateral key grip to pinch the key, followed by wrist pronation to lock and supination to unlock." 
+      desc: "Simulates lateral key grip to pinch the key, followed by wrist pronation to lock and supination to unlock."
     },
-    { 
-      id: 5, 
-      title: "Scenario 5: Carrying a Bag", 
+    {
+      id: 5,
+      title: "Scenario 5: Carrying a Bag",
       dbs: "Primary: DB6 | Secondary: DB2 / DB3",
-      desc: "Tests long-term stability. Involves reaching, hooking fingers for a snap grasp, and holding a static grip." 
+      desc: "Tests long-term stability. Involves reaching, hooking fingers for a snap grasp, and holding a static grip."
     },
   ];
 
   const handleTriggerEndpoint = async (scenarioId: number, scenarioTitle: string) => {
     setToastMessage(`Starting ${scenarioTitle}...`);
-    
+
     try {
       const response = await fetch(`http://localhost:8001/scenario/${scenarioId}`, {
         method: "POST",
@@ -42,7 +42,7 @@ export function ScenariosSection() {
       });
 
       if (!response.ok) throw new Error("Failed to trigger scenario endpoint");
-      
+
       const data = await response.json();
       setToastMessage(`Completed! Processed ${data.movements_processed} movements.`);
     } catch (error) {

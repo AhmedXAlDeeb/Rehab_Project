@@ -217,10 +217,10 @@ export function SignalSenderCard({ onInferenceComplete }: SignalSenderCardProps)
             </button>
           )}
         </div>
-        <SignalPreview 
-          signal={viewMode === "live" && latestLiveSignal ? latestLiveSignal : createMockSignal(seed)} 
-          width={800} 
-          height={240} 
+        <SignalPreview
+          signal={viewMode === "live" && latestLiveSignal ? latestLiveSignal : createMockSignal(seed)}
+          width={800}
+          height={240}
         />
       </div>
 
