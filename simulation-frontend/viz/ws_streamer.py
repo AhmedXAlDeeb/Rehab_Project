@@ -20,10 +20,12 @@ load_dotenv()
 from envs.hand_env import HandEnv
 from bridge.ws_server import run_server, set_env, _clients
 
+import bridge.ws_server as ws_server
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("ws_streamer")
 
-async def video_broadcast(env):
+async def video_broadcast():
     """Streams MJPEG frames to all connected websocket clients."""
     target_fps = 30
     frame_interval = 1.0 / target_fps
@@ -32,7 +34,8 @@ async def video_broadcast(env):
         start_time = time.time()
         
         # Only render and encode if we have connected clients
-        if _clients:
+        env = ws_server._env
+        if _clients and env is not None:
             frame = env.get_frame()
             if frame is not None:
                 bio = BytesIO()
@@ -62,7 +65,7 @@ async def wrapper(env):
     # Run the server and broadcasting concurrently
     await asyncio.gather(
         run_server(),
-        video_broadcast(env)
+        video_broadcast()
     )
 
 def start_network(env):
